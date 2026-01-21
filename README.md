@@ -24,11 +24,11 @@
 ## Screenshots
 
 <p align="center">
-  <img src="assets/screenshot3.PNG" alt="DriverUpdate Pro - Main Interface" width="700">
+  <img src="assets/01_screenshot.PNG" alt="DriverUpdate Pro - Main Interface" width="700">
 </p>
 
 <p align="center">
-  <img src="assets/screenshot.PNG" alt="DriverUpdate Pro - Screenshot" width="700">
+  <img src="assets/02_screenshot.PNG" alt="DriverUpdate Pro - Screenshot" width="700">
 </p>
 
 
