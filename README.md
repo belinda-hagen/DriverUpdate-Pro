@@ -5,6 +5,8 @@
 <h1 align="center">DriverUpdate Pro</h1>
 
 <p align="center">
+  <img src="https://img.shields.io/github/v/release/belinda-hagen/DriverUpdate-Pro?style=flat-square&label=Version&color=brightgreen" alt="Latest Version">
+  <img src="https://img.shields.io/github/downloads/belinda-hagen/DriverUpdate-Pro/total?style=flat-square&label=Downloads&color=blue" alt="Downloads">
   <img src="https://img.shields.io/badge/Platform-Windows-blue?style=flat-square" alt="Platform">
   <img src="https://img.shields.io/badge/Built%20with-Electron-47848F?style=flat-square&logo=electron&logoColor=white" alt="Electron">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
