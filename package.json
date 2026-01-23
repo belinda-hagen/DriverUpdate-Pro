@@ -5,9 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
-    "build:icon": "electron-builder && node scripts/set-icon.js && electron-builder --prepackaged dist/win-unpacked --win",
-    "build:publish": "electron-builder && node scripts/set-icon.js && electron-builder --prepackaged dist/win-unpacked --win --publish always",
+    "build": "electron-builder --dir && node scripts/set-icon.js && electron-builder --prepackaged dist/win-unpacked",
+    "build:dir": "electron-builder --dir",
+    "build:publish": "electron-builder --dir && node scripts/set-icon.js && electron-builder --prepackaged dist/win-unpacked --publish always",
     "generate-icon": "node scripts/generate-icon.js",
     "set-icon": "node scripts/set-icon.js"
   },
@@ -40,7 +40,8 @@
         }
       ],
       "icon": "assets/icon.ico",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "executableName": "DriverUpdate Pro"
     },
     "nsis": {
       "oneClick": false,

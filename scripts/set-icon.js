@@ -1,5 +1,6 @@
 // Post-build script to set the application icon
-const { rcedit } = require('rcedit');
+const rceditModule = require('rcedit');
+const rcedit = rceditModule.rcedit || rceditModule;
 const path = require('path');
 
 const rootDir = path.join(__dirname, '..');
@@ -18,8 +19,11 @@ async function setIcon() {
         'ProductName': 'DriverUpdate Pro',
         'FileDescription': 'Professional driver update scanner for Windows',
         'CompanyName': 'DriverUpdate Pro',
-        'LegalCopyright': 'Copyright (c) 2026 Belinda Hagen'
-      }
+        'LegalCopyright': 'Copyright (c) 2026 Belinda Hagen',
+        'OriginalFilename': 'DriverUpdate Pro.exe'
+      },
+      'file-version': '1.0.0',
+      'product-version': '1.0.0'
     });
     console.log('✅ Icon set successfully!');
   } catch (err) {
