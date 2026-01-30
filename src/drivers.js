@@ -69,51 +69,52 @@ const nvidiaProductMapping = {
 };
 
 // AMD Product mapping for direct download links
+// AMD's current URL structure: /graphics/radeon-rx-7000-series-graphics/amd-radeon-rx-7900-xtx
 const amdProductMapping = {
   // Radeon RX 9000 Series
-  'rx 9070 xt': { family: 'radeon-rx-9000-series', product: 'radeon-rx-9070-xt' },
-  'rx 9070': { family: 'radeon-rx-9000-series', product: 'radeon-rx-9070' },
+  'rx 9070 xt': { family: 'radeon-rx-9000-series-graphics', product: 'amd-radeon-rx-9070-xt' },
+  'rx 9070': { family: 'radeon-rx-9000-series-graphics', product: 'amd-radeon-rx-9070' },
   
   // Radeon RX 7000 Series
-  'rx 7900 xtx': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7900-xtx' },
-  'rx 7900 xt': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7900-xt' },
-  'rx 7900 gre': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7900-gre' },
-  'rx 7800 xt': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7800-xt' },
-  'rx 7700 xt': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7700-xt' },
-  'rx 7600 xt': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7600-xt' },
-  'rx 7600': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7600' },
+  'rx 7900 xtx': { family: 'radeon-rx-7000-series-graphics', product: 'amd-radeon-rx-7900-xtx' },
+  'rx 7900 xt': { family: 'radeon-rx-7000-series-graphics', product: 'amd-radeon-rx-7900-xt' },
+  'rx 7900 gre': { family: 'radeon-rx-7000-series-graphics', product: 'amd-radeon-rx-7900-gre' },
+  'rx 7800 xt': { family: 'radeon-rx-7000-series-graphics', product: 'amd-radeon-rx-7800-xt' },
+  'rx 7700 xt': { family: 'radeon-rx-7000-series-graphics', product: 'amd-radeon-rx-7700-xt' },
+  'rx 7600 xt': { family: 'radeon-rx-7000-series-graphics', product: 'amd-radeon-rx-7600-xt' },
+  'rx 7600': { family: 'radeon-rx-7000-series-graphics', product: 'amd-radeon-rx-7600' },
   
   // Radeon RX 6000 Series
-  'rx 6950 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6950-xt' },
-  'rx 6900 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6900-xt' },
-  'rx 6800 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6800-xt' },
-  'rx 6800': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6800' },
-  'rx 6750 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6750-xt' },
-  'rx 6700 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6700-xt' },
-  'rx 6700': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6700' },
-  'rx 6650 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6650-xt' },
-  'rx 6600 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6600-xt' },
-  'rx 6600': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6600' },
-  'rx 6500 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6500-xt' },
-  'rx 6400': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6400' },
+  'rx 6950 xt': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6950-xt' },
+  'rx 6900 xt': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6900-xt' },
+  'rx 6800 xt': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6800-xt' },
+  'rx 6800': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6800' },
+  'rx 6750 xt': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6750-xt' },
+  'rx 6700 xt': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6700-xt' },
+  'rx 6700': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6700' },
+  'rx 6650 xt': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6650-xt' },
+  'rx 6600 xt': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6600-xt' },
+  'rx 6600': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6600' },
+  'rx 6500 xt': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6500-xt' },
+  'rx 6400': { family: 'radeon-rx-6000-series-graphics', product: 'amd-radeon-rx-6400' },
   
   // Radeon RX 5000 Series
-  'rx 5700 xt': { family: 'radeon-rx-5000-series', product: 'radeon-rx-5700-xt' },
-  'rx 5700': { family: 'radeon-rx-5000-series', product: 'radeon-rx-5700' },
-  'rx 5600 xt': { family: 'radeon-rx-5000-series', product: 'radeon-rx-5600-xt' },
-  'rx 5500 xt': { family: 'radeon-rx-5000-series', product: 'radeon-rx-5500-xt' },
+  'rx 5700 xt': { family: 'radeon-rx-5000-series-graphics', product: 'amd-radeon-rx-5700-xt' },
+  'rx 5700': { family: 'radeon-rx-5000-series-graphics', product: 'amd-radeon-rx-5700' },
+  'rx 5600 xt': { family: 'radeon-rx-5000-series-graphics', product: 'amd-radeon-rx-5600-xt' },
+  'rx 5500 xt': { family: 'radeon-rx-5000-series-graphics', product: 'amd-radeon-rx-5500-xt' },
   
   // AMD Ryzen Processors with integrated graphics
-  'ryzen 9': { family: 'amd-ryzen-processors', product: 'amd-ryzen-9' },
-  'ryzen 7': { family: 'amd-ryzen-processors', product: 'amd-ryzen-7' },
-  'ryzen 5': { family: 'amd-ryzen-processors', product: 'amd-ryzen-5' },
-  'ryzen 3': { family: 'amd-ryzen-processors', product: 'amd-ryzen-3' },
+  'ryzen 9': { family: 'ryzen-processors', product: 'amd-ryzen-9' },
+  'ryzen 7': { family: 'ryzen-processors', product: 'amd-ryzen-7' },
+  'ryzen 5': { family: 'ryzen-processors', product: 'amd-ryzen-5' },
+  'ryzen 3': { family: 'ryzen-processors', product: 'amd-ryzen-3' },
   
   // AMD Chipsets
-  'x670': { family: 'amd-chipsets', product: 'amd-socket-am5' },
-  'x570': { family: 'amd-chipsets', product: 'amd-socket-am4' },
-  'b650': { family: 'amd-chipsets', product: 'amd-socket-am5' },
-  'b550': { family: 'amd-chipsets', product: 'amd-socket-am4' },
+  'x670': { family: 'chipsets', product: 'amd-socket-am5' },
+  'x570': { family: 'chipsets', product: 'amd-socket-am4' },
+  'b650': { family: 'chipsets', product: 'amd-socket-am5' },
+  'b550': { family: 'chipsets', product: 'amd-socket-am4' },
 };
 
 // Intel Product mapping for direct download links
@@ -202,12 +203,20 @@ function buildNvidiaDirectUrl(deviceName) {
 function buildAmdDirectUrl(deviceName) {
   const lowerName = deviceName.toLowerCase();
   
-  // Find matching product
+  // Check if this is an AMD product we recognize
   for (const [key, value] of Object.entries(amdProductMapping)) {
     if (lowerName.includes(key)) {
-      // AMD's auto-detect URL format
-      return `https://www.amd.com/en/support/downloads/drivers.html/${value.family}/${value.product}`;
+      // AMD's support page with product-specific path
+      // Format: https://www.amd.com/en/support/graphics/radeon-rx-7000-series-graphics/amd-radeon-rx-7900-xtx
+      return `https://www.amd.com/en/support/${value.family}/${value.product}`;
     }
+  }
+  
+  // Fallback: if we found a recognizable Radeon product, link to main download with auto-detect
+  // This is actually the best user experience as AMD Software auto-detects the GPU
+  if (lowerName.includes('radeon') || lowerName.includes('rx ') || lowerName.includes('amd')) {
+    // Direct link to AMD Software download - it auto-detects the GPU
+    return 'https://www.amd.com/en/support/download/drivers.html';
   }
   
   return null;

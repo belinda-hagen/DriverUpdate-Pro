@@ -28,6 +28,71 @@ const unknownStatusEl = document.getElementById('unknownStatus');
 let allDrivers = [];
 let currentFilter = 'all';
 let currentStatusFilter = 'all';
+let showImportantOnly = true; // Default to showing only important drivers
+
+// List of important device categories to show
+const importantCategories = ['Display', 'MEDIA', 'Net', 'Bluetooth', 'Storage'];
+
+// Keywords that indicate unimportant/system drivers to hide
+const hideKeywords = [
+  'standardsystem', 'standard system', 'standardgerät', 'standard device',
+  'microsoft basic', 'generic', 'volume shadow', 'plug and play',
+  'acpi', 'pci bus', 'pci express', 'pci-to-pci', 'smbios',
+  'composite bus', 'usbxhci', 'root hub', 'host controller',
+  'ndis', 'wmi data', 'battery', 'motherboard resources',
+  'system timer', 'system cmos', 'system speaker', 'system board',
+  'trusted platform', 'tpm', 'intel management engine',
+  'high definition audio-controller', 'i2c controller',
+  'smbus', 'thermal', 'watchdog', 'serial bus',
+  'microsoft windows management', 'microsoft hyper-v'
+];
+
+// Keywords that indicate important drivers to always show
+const importantKeywords = [
+  'nvidia', 'geforce', 'quadro', 'amd', 'radeon', 'intel',
+  'arc ', 'iris', 'uhd graphics', 'hd graphics',
+  'realtek', 'creative', 'sound blaster', 'audio',
+  'wi-fi', 'wifi', 'wireless', 'ethernet', 'killer',
+  'bluetooth', 'logitech', 'razer', 'corsair', 'steelseries',
+  'nvme', 'ssd', 'samsung', 'western digital', 'seagate'
+];
+
+/**
+ * Check if a driver is considered "important" and should be shown by default
+ */
+function isImportantDriver(driver) {
+  const deviceName = (driver.DeviceName || '').toLowerCase();
+  const manufacturer = (driver.Manufacturer || '').toLowerCase();
+  const deviceClass = (driver.DeviceClass || '').toLowerCase();
+  
+  // Always show if manufacturer is a known important brand
+  for (const keyword of importantKeywords) {
+    if (deviceName.includes(keyword) || manufacturer.includes(keyword)) {
+      return true;
+    }
+  }
+  
+  // Hide if device name contains system/generic keywords
+  for (const keyword of hideKeywords) {
+    if (deviceName.includes(keyword) || manufacturer.includes(keyword.toLowerCase())) {
+      return false;
+    }
+  }
+  
+  // Show if it's in an important category
+  const category = getDeviceCategory(driver.DeviceClass);
+  if (importantCategories.includes(category)) {
+    return true;
+  }
+  
+  // Hide Microsoft drivers (usually auto-updated via Windows Update)
+  if (manufacturer === 'microsoft' || manufacturer.includes('microsoft corporation')) {
+    return false;
+  }
+  
+  // Show by default for unknown cases
+  return true;
+}
 
 // Setup window controls
 if (minimizeBtn) {
@@ -469,6 +534,31 @@ async function init() {
     });
   });
   
+  // Setup "Important Only" toggle
+  const importantOnlyToggle = document.getElementById('importantOnlyToggle');
+  if (importantOnlyToggle) {
+    // Load saved preference
+    const savedPref = localStorage.getItem('showImportantOnly');
+    if (savedPref !== null) {
+      showImportantOnly = savedPref === 'true';
+      importantOnlyToggle.checked = showImportantOnly;
+    }
+    
+    importantOnlyToggle.addEventListener('change', (e) => {
+      showImportantOnly = e.target.checked;
+      localStorage.setItem('showImportantOnly', showImportantOnly);
+      renderDrivers();
+      updateStats();
+      
+      // Show toast notification
+      if (showImportantOnly) {
+        showToast('Filter Applied', 'Showing important drivers only', 'info', 2000);
+      } else {
+        showToast('Filter Disabled', 'Showing all drivers', 'info', 2000);
+      }
+    });
+  }
+  
   // Set first status filter as active by default
   if (statusFilterTabs.length > 0) {
     statusFilterTabs[0].classList.add('active');
@@ -617,10 +707,16 @@ async function scanDrivers() {
 
 // Update statistics
 function updateStats() {
-  const total = allDrivers.length;
-  const upToDate = allDrivers.filter(d => d.status === 'uptodate').length;
-  const updates = allDrivers.filter(d => d.status === 'update').length;
-  const unknown = allDrivers.filter(d => d.status === 'unknown').length;
+  // Use filtered drivers if "important only" is enabled
+  let driversToCount = allDrivers;
+  if (showImportantOnly) {
+    driversToCount = allDrivers.filter(d => isImportantDriver(d));
+  }
+  
+  const total = driversToCount.length;
+  const upToDate = driversToCount.filter(d => d.status === 'uptodate').length;
+  const updates = driversToCount.filter(d => d.status === 'update').length;
+  const unknown = driversToCount.filter(d => d.status === 'unknown').length;
   
   animateNumber(totalDriversEl, total);
   animateNumber(upToDateEl, upToDate);
@@ -651,6 +747,11 @@ function animateNumber(element, target) {
 // Render drivers based on filter
 function renderDrivers() {
   let filteredDrivers = allDrivers;
+  
+  // Apply "important only" filter first
+  if (showImportantOnly) {
+    filteredDrivers = filteredDrivers.filter(d => isImportantDriver(d));
+  }
   
   // Apply category filter
   if (currentFilter !== 'all') {

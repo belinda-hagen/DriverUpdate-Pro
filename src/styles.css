@@ -470,6 +470,8 @@ body {
   box-shadow: 0 2px 8px rgba(82, 183, 136, 0.3);
 }
 
+/* Toggle Switch styles are defined in the settings modal section */
+
 /* Main Content */
 .main-content {
   flex: 1;
@@ -1066,6 +1068,7 @@ body {
 .modal-body {
   padding: 24px;
   overflow-y: auto;
+  max-height: calc(80vh - 80px);
 }
 
 .settings-group {
