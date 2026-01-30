@@ -1,10 +1,280 @@
+// ============================================
+// DIRECT DOWNLOAD URL BUILDERS
+// ============================================
+
+// NVIDIA Product Series and Family IDs for direct download links
+const nvidiaProductMapping = {
+  // GeForce RTX 50 Series
+  'rtx 5090': { psid: 129, pfid: 1067, series: 'GeForce RTX 50 Series' },
+  'rtx 5080': { psid: 129, pfid: 1068, series: 'GeForce RTX 50 Series' },
+  'rtx 5070 ti': { psid: 129, pfid: 1069, series: 'GeForce RTX 50 Series' },
+  'rtx 5070': { psid: 129, pfid: 1070, series: 'GeForce RTX 50 Series' },
+  
+  // GeForce RTX 40 Series
+  'rtx 4090': { psid: 127, pfid: 1037, series: 'GeForce RTX 40 Series' },
+  'rtx 4080 super': { psid: 127, pfid: 1061, series: 'GeForce RTX 40 Series' },
+  'rtx 4080': { psid: 127, pfid: 1038, series: 'GeForce RTX 40 Series' },
+  'rtx 4070 ti super': { psid: 127, pfid: 1062, series: 'GeForce RTX 40 Series' },
+  'rtx 4070 ti': { psid: 127, pfid: 1044, series: 'GeForce RTX 40 Series' },
+  'rtx 4070 super': { psid: 127, pfid: 1063, series: 'GeForce RTX 40 Series' },
+  'rtx 4070': { psid: 127, pfid: 1045, series: 'GeForce RTX 40 Series' },
+  'rtx 4060 ti': { psid: 127, pfid: 1046, series: 'GeForce RTX 40 Series' },
+  'rtx 4060': { psid: 127, pfid: 1047, series: 'GeForce RTX 40 Series' },
+  
+  // GeForce RTX 30 Series
+  'rtx 3090 ti': { psid: 122, pfid: 1014, series: 'GeForce RTX 30 Series' },
+  'rtx 3090': { psid: 122, pfid: 960, series: 'GeForce RTX 30 Series' },
+  'rtx 3080 ti': { psid: 122, pfid: 984, series: 'GeForce RTX 30 Series' },
+  'rtx 3080': { psid: 122, pfid: 961, series: 'GeForce RTX 30 Series' },
+  'rtx 3070 ti': { psid: 122, pfid: 985, series: 'GeForce RTX 30 Series' },
+  'rtx 3070': { psid: 122, pfid: 962, series: 'GeForce RTX 30 Series' },
+  'rtx 3060 ti': { psid: 122, pfid: 973, series: 'GeForce RTX 30 Series' },
+  'rtx 3060': { psid: 122, pfid: 975, series: 'GeForce RTX 30 Series' },
+  'rtx 3050': { psid: 122, pfid: 1013, series: 'GeForce RTX 30 Series' },
+  
+  // GeForce RTX 20 Series
+  'rtx 2080 ti': { psid: 107, pfid: 899, series: 'GeForce RTX 20 Series' },
+  'rtx 2080 super': { psid: 107, pfid: 937, series: 'GeForce RTX 20 Series' },
+  'rtx 2080': { psid: 107, pfid: 900, series: 'GeForce RTX 20 Series' },
+  'rtx 2070 super': { psid: 107, pfid: 938, series: 'GeForce RTX 20 Series' },
+  'rtx 2070': { psid: 107, pfid: 901, series: 'GeForce RTX 20 Series' },
+  'rtx 2060 super': { psid: 107, pfid: 939, series: 'GeForce RTX 20 Series' },
+  'rtx 2060': { psid: 107, pfid: 915, series: 'GeForce RTX 20 Series' },
+  
+  // GeForce GTX 16 Series
+  'gtx 1660 ti': { psid: 111, pfid: 917, series: 'GeForce GTX 16 Series' },
+  'gtx 1660 super': { psid: 111, pfid: 949, series: 'GeForce GTX 16 Series' },
+  'gtx 1660': { psid: 111, pfid: 921, series: 'GeForce GTX 16 Series' },
+  'gtx 1650 super': { psid: 111, pfid: 950, series: 'GeForce GTX 16 Series' },
+  'gtx 1650': { psid: 111, pfid: 928, series: 'GeForce GTX 16 Series' },
+  
+  // GeForce GTX 10 Series
+  'gtx 1080 ti': { psid: 101, pfid: 848, series: 'GeForce GTX 10 Series' },
+  'gtx 1080': { psid: 101, pfid: 835, series: 'GeForce GTX 10 Series' },
+  'gtx 1070 ti': { psid: 101, pfid: 876, series: 'GeForce GTX 10 Series' },
+  'gtx 1070': { psid: 101, pfid: 836, series: 'GeForce GTX 10 Series' },
+  'gtx 1060': { psid: 101, pfid: 853, series: 'GeForce GTX 10 Series' },
+  'gtx 1050 ti': { psid: 101, pfid: 870, series: 'GeForce GTX 10 Series' },
+  'gtx 1050': { psid: 101, pfid: 871, series: 'GeForce GTX 10 Series' },
+  
+  // Notebook variants
+  'rtx 4090 laptop': { psid: 128, pfid: 1039, series: 'GeForce RTX 40 Series (Notebooks)' },
+  'rtx 4080 laptop': { psid: 128, pfid: 1040, series: 'GeForce RTX 40 Series (Notebooks)' },
+  'rtx 4070 laptop': { psid: 128, pfid: 1048, series: 'GeForce RTX 40 Series (Notebooks)' },
+  'rtx 4060 laptop': { psid: 128, pfid: 1049, series: 'GeForce RTX 40 Series (Notebooks)' },
+  'rtx 4050 laptop': { psid: 128, pfid: 1050, series: 'GeForce RTX 40 Series (Notebooks)' },
+  'rtx 3080 laptop': { psid: 123, pfid: 971, series: 'GeForce RTX 30 Series (Notebooks)' },
+  'rtx 3070 laptop': { psid: 123, pfid: 972, series: 'GeForce RTX 30 Series (Notebooks)' },
+  'rtx 3060 laptop': { psid: 123, pfid: 976, series: 'GeForce RTX 30 Series (Notebooks)' },
+};
+
+// AMD Product mapping for direct download links
+const amdProductMapping = {
+  // Radeon RX 9000 Series
+  'rx 9070 xt': { family: 'radeon-rx-9000-series', product: 'radeon-rx-9070-xt' },
+  'rx 9070': { family: 'radeon-rx-9000-series', product: 'radeon-rx-9070' },
+  
+  // Radeon RX 7000 Series
+  'rx 7900 xtx': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7900-xtx' },
+  'rx 7900 xt': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7900-xt' },
+  'rx 7900 gre': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7900-gre' },
+  'rx 7800 xt': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7800-xt' },
+  'rx 7700 xt': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7700-xt' },
+  'rx 7600 xt': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7600-xt' },
+  'rx 7600': { family: 'radeon-rx-7000-series', product: 'radeon-rx-7600' },
+  
+  // Radeon RX 6000 Series
+  'rx 6950 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6950-xt' },
+  'rx 6900 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6900-xt' },
+  'rx 6800 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6800-xt' },
+  'rx 6800': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6800' },
+  'rx 6750 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6750-xt' },
+  'rx 6700 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6700-xt' },
+  'rx 6700': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6700' },
+  'rx 6650 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6650-xt' },
+  'rx 6600 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6600-xt' },
+  'rx 6600': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6600' },
+  'rx 6500 xt': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6500-xt' },
+  'rx 6400': { family: 'radeon-rx-6000-series', product: 'radeon-rx-6400' },
+  
+  // Radeon RX 5000 Series
+  'rx 5700 xt': { family: 'radeon-rx-5000-series', product: 'radeon-rx-5700-xt' },
+  'rx 5700': { family: 'radeon-rx-5000-series', product: 'radeon-rx-5700' },
+  'rx 5600 xt': { family: 'radeon-rx-5000-series', product: 'radeon-rx-5600-xt' },
+  'rx 5500 xt': { family: 'radeon-rx-5000-series', product: 'radeon-rx-5500-xt' },
+  
+  // AMD Ryzen Processors with integrated graphics
+  'ryzen 9': { family: 'amd-ryzen-processors', product: 'amd-ryzen-9' },
+  'ryzen 7': { family: 'amd-ryzen-processors', product: 'amd-ryzen-7' },
+  'ryzen 5': { family: 'amd-ryzen-processors', product: 'amd-ryzen-5' },
+  'ryzen 3': { family: 'amd-ryzen-processors', product: 'amd-ryzen-3' },
+  
+  // AMD Chipsets
+  'x670': { family: 'amd-chipsets', product: 'amd-socket-am5' },
+  'x570': { family: 'amd-chipsets', product: 'amd-socket-am4' },
+  'b650': { family: 'amd-chipsets', product: 'amd-socket-am5' },
+  'b550': { family: 'amd-chipsets', product: 'amd-socket-am4' },
+};
+
+// Intel Product mapping for direct download links
+const intelProductMapping = {
+  // Intel Arc GPUs
+  'arc a770': { productId: '227957', category: 'graphics' },
+  'arc a750': { productId: '227958', category: 'graphics' },
+  'arc a580': { productId: '227959', category: 'graphics' },
+  'arc a380': { productId: '227960', category: 'graphics' },
+  'arc a310': { productId: '227961', category: 'graphics' },
+  
+  // Intel Iris Xe Graphics
+  'iris xe': { productId: '80939', category: 'graphics' },
+  'iris plus': { productId: '88353', category: 'graphics' },
+  'uhd graphics 770': { productId: '212318', category: 'graphics' },
+  'uhd graphics 730': { productId: '212319', category: 'graphics' },
+  'uhd graphics 630': { productId: '126789', category: 'graphics' },
+  'uhd graphics 620': { productId: '126790', category: 'graphics' },
+  
+  // Intel WiFi
+  'wi-fi 7 be200': { productId: '230078', category: 'wireless' },
+  'wi-fi 6e ax411': { productId: '204837', category: 'wireless' },
+  'wi-fi 6e ax211': { productId: '204836', category: 'wireless' },
+  'wi-fi 6e ax210': { productId: '204837', category: 'wireless' },
+  'wi-fi 6 ax201': { productId: '130293', category: 'wireless' },
+  'wi-fi 6 ax200': { productId: '130293', category: 'wireless' },
+  'wireless-ac 9560': { productId: '99446', category: 'wireless' },
+  'wireless-ac 9462': { productId: '94150', category: 'wireless' },
+  'wireless-ac 9260': { productId: '94150', category: 'wireless' },
+  'dual band wireless-ac 8265': { productId: '94150', category: 'wireless' },
+  
+  // Intel Ethernet
+  'ethernet i225': { productId: '184686', category: 'ethernet' },
+  'ethernet i219': { productId: '71305', category: 'ethernet' },
+  'ethernet i211': { productId: '64403', category: 'ethernet' },
+  'killer e3100': { productId: '184686', category: 'ethernet' },
+  'killer e2600': { productId: '184686', category: 'ethernet' },
+  
+  // Intel Chipset
+  'z790': { productId: '212325', category: 'chipset' },
+  'z690': { productId: '212325', category: 'chipset' },
+  'b760': { productId: '212325', category: 'chipset' },
+  'h770': { productId: '212325', category: 'chipset' },
+};
+
+// Windows OS IDs for NVIDIA
+const windowsOsIds = {
+  'windows 11 64-bit': 57,
+  'windows 10 64-bit': 57,
+  'windows 10 32-bit': 56,
+  'windows 7 64-bit': 19,
+  'windows 7 32-bit': 18,
+};
+
+/**
+ * Build a direct NVIDIA download URL with pre-filled parameters
+ * @param {string} deviceName - The full device name (e.g., "NVIDIA GeForce RTX 4070")
+ * @returns {string|null} - Direct URL or null if mapping not found
+ */
+function buildNvidiaDirectUrl(deviceName) {
+  const lowerName = deviceName.toLowerCase();
+  
+  // Check for notebook/laptop variants first
+  let isNotebook = lowerName.includes('laptop') || lowerName.includes('notebook') || lowerName.includes('mobile');
+  
+  // Find matching product
+  for (const [key, value] of Object.entries(nvidiaProductMapping)) {
+    if (lowerName.includes(key)) {
+      // Use Windows 11/10 64-bit as default (most common)
+      const osid = 57;
+      const lang = 'en-us';
+      
+      // Build the direct search URL
+      return `https://www.nvidia.com/Download/index.aspx?psid=${value.psid}&pfid=${value.pfid}&osid=${osid}&lang=${lang}`;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Build a direct AMD download URL with pre-filled parameters
+ * @param {string} deviceName - The full device name (e.g., "AMD Radeon RX 7900 XTX")
+ * @returns {string|null} - Direct URL or null if mapping not found
+ */
+function buildAmdDirectUrl(deviceName) {
+  const lowerName = deviceName.toLowerCase();
+  
+  // Find matching product
+  for (const [key, value] of Object.entries(amdProductMapping)) {
+    if (lowerName.includes(key)) {
+      // AMD's auto-detect URL format
+      return `https://www.amd.com/en/support/downloads/drivers.html/${value.family}/${value.product}`;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Build a direct Intel download URL with pre-filled parameters
+ * @param {string} deviceName - The full device name (e.g., "Intel Wi-Fi 6 AX201")
+ * @returns {string|null} - Direct URL or null if mapping not found
+ */
+function buildIntelDirectUrl(deviceName) {
+  const lowerName = deviceName.toLowerCase();
+  
+  // Find matching product
+  for (const [key, value] of Object.entries(intelProductMapping)) {
+    if (lowerName.includes(key)) {
+      return `https://www.intel.com/content/www/us/en/download-center/home.html?productId=${value.productId}`;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Get the best possible download URL for a device
+ * Tries direct links first, falls back to generic manufacturer page
+ * @param {string} manufacturer - Device manufacturer
+ * @param {string} deviceName - Full device name
+ * @returns {string} - Best available download URL
+ */
+function getDirectDownloadUrl(manufacturer, deviceName) {
+  const lowerMfr = manufacturer ? manufacturer.toLowerCase() : '';
+  const lowerDevice = deviceName ? deviceName.toLowerCase() : '';
+  
+  // Try NVIDIA direct link
+  if (lowerMfr.includes('nvidia') || lowerDevice.includes('nvidia') || lowerDevice.includes('geforce') || lowerDevice.includes('quadro')) {
+    const directUrl = buildNvidiaDirectUrl(deviceName);
+    if (directUrl) return directUrl;
+  }
+  
+  // Try AMD direct link
+  if (lowerMfr.includes('amd') || lowerMfr.includes('advanced micro') || lowerDevice.includes('radeon') || lowerDevice.includes('ryzen')) {
+    const directUrl = buildAmdDirectUrl(deviceName);
+    if (directUrl) return directUrl;
+  }
+  
+  // Try Intel direct link
+  if (lowerMfr.includes('intel') || lowerDevice.includes('intel') || lowerDevice.includes('iris') || lowerDevice.includes('uhd graphics')) {
+    const directUrl = buildIntelDirectUrl(deviceName);
+    if (directUrl) return directUrl;
+  }
+  
+  // Fall back to generic manufacturer URL
+  return null;
+}
+
+// ============================================
+// MANUFACTURER URLs (Fallback)
+// ============================================
+
 // Manufacturer download URLs mapping
 const manufacturerUrls = {
   // GPU Manufacturers
   'nvidia': 'https://www.nvidia.com/Download/index.aspx',
-  'amd': 'https://www.amd.com/en/support',
+  'amd': 'https://www.amd.com/en/support/download/drivers.html',
   'intel': 'https://www.intel.com/content/www/us/en/download-center/home.html',
-  'advanced micro devices': 'https://www.amd.com/en/support',
+  'advanced micro devices': 'https://www.amd.com/en/support/download/drivers.html',
   
   // Audio Manufacturers
   'realtek': 'https://www.realtek.com/en/component/zoo/category/pc-audio-codecs-high-definition-audio-codecs-software',
@@ -141,7 +411,15 @@ function getDeviceIcon(deviceClass) {
 }
 
 // Get download URL for manufacturer
+// Now tries to get direct download links first, falls back to generic page
 function getManufacturerUrl(manufacturer, deviceName) {
+  // First, try to get a direct download URL with pre-filled parameters
+  const directUrl = getDirectDownloadUrl(manufacturer, deviceName);
+  if (directUrl) {
+    return directUrl;
+  }
+  
+  // Fallback to generic manufacturer URLs
   if (!manufacturer) {
     return 'https://www.catalog.update.microsoft.com/';
   }
