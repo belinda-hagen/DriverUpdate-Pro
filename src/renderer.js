@@ -4,8 +4,13 @@ const loadingState = document.getElementById('loadingState');
 const emptyState = document.getElementById('emptyState');
 const driverList = document.getElementById('driverList');
 const systemInfoEl = document.getElementById('system-info');
-const filterTabs = document.querySelectorAll('.filter-tab:not(.status-filter)');
+const filterTabs = document.querySelectorAll('.filter-tab:not(.status-filter):not(.view-tab)');
 const statusFilterTabs = document.querySelectorAll('.filter-tab.status-filter');
+const toolsViewTab = document.getElementById('toolsViewTab');
+const toolsView = document.getElementById('toolsView');
+const toolsBackBtn = document.getElementById('toolsBackBtn');
+const statsBar = document.querySelector('.stats-bar');
+const statClickables = document.querySelectorAll('.stat-clickable');
 const themeToggle = document.getElementById('themeToggle');
 const toastContainer = document.getElementById('toastContainer');
 const loadingTitle = document.getElementById('loadingTitle');
@@ -517,20 +522,67 @@ async function init() {
   // Setup filter tabs
   filterTabs.forEach(tab => {
     tab.addEventListener('click', () => {
+      switchView('drivers');
       filterTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       currentFilter = tab.dataset.filter;
       renderDrivers();
     });
   });
-  
+
   // Setup status filter tabs
   statusFilterTabs.forEach(tab => {
     tab.addEventListener('click', () => {
+      switchView('drivers');
       statusFilterTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       currentStatusFilter = tab.dataset.status;
+      statClickables.forEach(t => t.classList.toggle('active', t.dataset.statFilter === currentStatusFilter));
       renderDrivers();
+    });
+  });
+
+  // Setup Driver Tools view tab
+  if (toolsViewTab) {
+    toolsViewTab.addEventListener('click', () => {
+      switchView('tools');
+    });
+  }
+
+  // Setup back button on tools view
+  if (toolsBackBtn) {
+    toolsBackBtn.addEventListener('click', () => {
+      switchView('drivers');
+    });
+  }
+
+  // Setup clickable stat tiles -> apply status filter
+  statClickables.forEach(tile => {
+    tile.addEventListener('click', () => {
+      const status = tile.dataset.statFilter;
+      switchView('drivers');
+      currentStatusFilter = status;
+      // Reflect in the existing status filter tabs (if a matching one exists)
+      statusFilterTabs.forEach(t => {
+        t.classList.toggle('active', t.dataset.status === status);
+      });
+      // Highlight the clicked tile
+      statClickables.forEach(t => t.classList.toggle('active', t === tile));
+      renderDrivers();
+    });
+  });
+
+  // Setup tool card buttons
+  document.querySelectorAll('.tool-card-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const url = btn.dataset.toolUrl;
+      if (!url) return;
+      try {
+        await window.electronAPI.openExternal(url);
+        showToast('Opening...', `Launching ${btn.textContent.trim()}`, 'info', 2000);
+      } catch (e) {
+        showToast('Error', 'Could not open link', 'error', 3000);
+      }
     });
   });
   
@@ -563,6 +615,10 @@ async function init() {
   if (statusFilterTabs.length > 0) {
     statusFilterTabs[0].classList.add('active');
   }
+  // Sync the stat tile active state with the default filter
+  statClickables.forEach(t => {
+    t.classList.toggle('active', t.dataset.statFilter === currentStatusFilter);
+  });
   
   // Setup theme toggle
   themeToggle.addEventListener('click', toggleTheme);
@@ -592,6 +648,7 @@ async function init() {
 
 // Scan drivers
 async function scanDrivers() {
+  switchView('drivers');
   scanBtn.disabled = true;
   scanBtn.innerHTML = `
     <svg class="spinning" width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -742,6 +799,36 @@ function animateNumber(element, target) {
   }
   
   requestAnimationFrame(update);
+}
+
+// Switch between drivers view and tools view
+function switchView(view) {
+  if (view === 'tools') {
+    if (toolsView) toolsView.classList.remove('hidden');
+    driverList.classList.add('hidden');
+    emptyState.classList.add('hidden');
+    loadingState.classList.remove('active');
+    if (statsBar) statsBar.style.display = 'none';
+    if (toolsViewTab) toolsViewTab.classList.add('active');
+    filterTabs.forEach(t => t.classList.remove('active'));
+    statusFilterTabs.forEach(t => t.classList.remove('active'));
+  } else {
+    if (toolsView) toolsView.classList.add('hidden');
+    if (statsBar) statsBar.style.display = '';
+    if (toolsViewTab) toolsViewTab.classList.remove('active');
+    // Re-activate the current filters visually
+    filterTabs.forEach(t => {
+      if (t.dataset.filter === currentFilter) t.classList.add('active');
+    });
+    statusFilterTabs.forEach(t => {
+      if (t.dataset.status === currentStatusFilter) t.classList.add('active');
+    });
+    statClickables.forEach(t => {
+      t.classList.toggle('active', t.dataset.statFilter === currentStatusFilter);
+    });
+    // Restore the driver list / empty state that was hidden when switching to tools
+    renderDrivers();
+  }
 }
 
 // Render drivers based on filter

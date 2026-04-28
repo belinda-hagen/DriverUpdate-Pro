@@ -99,22 +99,35 @@
 
     <!-- Stats Bar -->
     <div class="stats-bar">
-      <div class="stat-item">
+      <button class="stat-item stat-clickable" data-stat-filter="all" title="Show all drivers">
         <span class="stat-value" id="totalDrivers">0</span>
         <span class="stat-label">Total Drivers</span>
-      </div>
-      <div class="stat-item">
+      </button>
+      <button class="stat-item stat-clickable" data-stat-filter="uptodate" title="Show only up-to-date drivers">
         <span class="stat-value stat-uptodate" id="upToDate">0</span>
         <span class="stat-label">Up to Date</span>
-      </div>
-      <div class="stat-item">
+      </button>
+      <button class="stat-item stat-clickable" data-stat-filter="update" title="Show drivers with updates available">
         <span class="stat-value stat-updates" id="updatesAvailable">0</span>
         <span class="stat-label">Updates Available</span>
-      </div>
-      <div class="stat-item">
+      </button>
+      <button class="stat-item stat-clickable" data-stat-filter="unknown" title="Show drivers with unknown status">
         <span class="stat-value stat-unknown" id="unknownStatus">0</span>
         <span class="stat-label">Unknown Status</span>
-      </div>
+      </button>
+      <div class="stat-divider"></div>
+      <button class="stat-item stat-action" id="toolsViewTab" title="Browse official manufacturer driver updater tools">
+        <span class="stat-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </span>
+        <span class="stat-label stat-action-label">Driver Tools
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px; vertical-align: -1px;">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </span>
+      </button>
     </div>
 
     <!-- Filter Tabs -->
@@ -162,6 +175,113 @@
 
       <!-- Driver List -->
       <div class="driver-list" id="driverList"></div>
+
+      <!-- Driver Tools View -->
+      <div class="tools-view hidden" id="toolsView">
+        <button class="btn-back" id="toolsBackBtn" title="Back to drivers">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back to Drivers
+        </button>
+        <div class="tools-header">
+          <h2>Official Driver Updaters</h2>
+          <p>Install the official tool from your hardware manufacturer to keep drivers updated automatically and safely.</p>
+        </div>
+        <div class="tools-grid">
+          <!-- NVIDIA App -->
+          <div class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon tool-icon-nvidia">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8.948 8.798v-1.43a6.7 6.7 0 0 1 .424-.018c3.922-.124 6.493 3.374 6.493 3.374s-2.774 3.851-5.75 3.851c-.398 0-.787-.064-1.157-.183V10.04c1.515.183 1.82.853 2.722 2.376l2.029-1.71s-1.48-1.943-3.976-1.943a6.74 6.74 0 0 0-.785.035m0-4.748v2.138l.424-.027c5.452-.184 9.01 4.473 9.01 4.473s-4.083 4.967-8.337 4.967c-.37 0-.733-.034-1.088-.097v1.32c.296.037.6.06.908.06 3.96 0 6.823-2.023 9.594-4.418.46.367 2.34 1.262 2.726 1.655-2.635 2.205-8.77 3.984-12.26 3.984-.336 0-.658-.02-.975-.05v1.86h15.014V4.05zm0 10.348v1.13c-3.66-.654-4.675-4.46-4.675-4.46s1.755-1.943 4.675-2.26v1.24h-.006c-1.532-.183-2.732 1.247-2.732 1.247s.677 2.41 2.738 3.103M2.328 10.97s2.165-3.197 6.62-3.538V6.24C3.5 6.638 0 11.054 0 11.054s1.982 5.736 8.948 6.394v-1.27c-5.114-.643-6.62-5.21-6.62-5.21z"/></svg>
+              </div>
+              <div class="tool-info">
+                <h3>NVIDIA App</h3>
+                <span class="tool-tag">GeForce / RTX / Quadro</span>
+              </div>
+            </div>
+            <p class="tool-description">Official replacement for GeForce Experience. Auto-detects your GPU and installs the latest Game Ready or Studio drivers.</p>
+            <button class="tool-card-btn" data-tool-url="https://www.nvidia.com/en-us/software/nvidia-app/">
+              Get NVIDIA App
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- AMD Adrenalin -->
+          <div class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon tool-icon-amd">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 12 15 21 6"/><line x1="3" y1="12" x2="12" y2="21"/><line x1="21" y1="12" x2="12" y2="21"/></svg>
+              </div>
+              <div class="tool-info">
+                <h3>AMD Software: Adrenalin</h3>
+                <span class="tool-tag">Radeon GPUs / Ryzen</span>
+              </div>
+            </div>
+            <p class="tool-description">Official driver and control panel for AMD Radeon graphics. Auto-detects your hardware and recommends the right driver.</p>
+            <button class="tool-card-btn" data-tool-url="https://www.amd.com/en/support/download/drivers.html">
+              Get AMD Software
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Intel DSA -->
+          <div class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon tool-icon-intel">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h.01"/><path d="M9 12v5"/><path d="M13 12v5"/><path d="M13 12c0-1 1-2 2-2s2 1 2 2v5"/></svg>
+              </div>
+              <div class="tool-info">
+                <h3>Intel Driver & Support Assistant</h3>
+                <span class="tool-tag">Intel CPUs / Graphics / Wi-Fi</span>
+              </div>
+            </div>
+            <p class="tool-description">Scans for outdated Intel drivers (graphics, chipset, Wi-Fi, Bluetooth, Ethernet) and downloads updates automatically.</p>
+            <button class="tool-card-btn" data-tool-url="https://www.intel.com/content/www/us/en/support/detect.html">
+              Get Intel DSA
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Windows Update -->
+          <div class="tool-card">
+            <div class="tool-card-top">
+              <div class="tool-icon tool-icon-windows">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+              </div>
+              <div class="tool-info">
+                <h3>Windows Update</h3>
+                <span class="tool-tag">Built into Windows</span>
+              </div>
+            </div>
+            <p class="tool-description">Microsoft delivers many drivers automatically through Windows Update — including chipset, audio, and printer drivers.</p>
+            <button class="tool-card-btn" data-tool-url="ms-settings:windowsupdate">
+              Open Windows Update
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="tools-footer-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          For Realtek and other component-level drivers, check your laptop or motherboard manufacturer's support site.
+        </div>
+      </div>
     </main>
 
     <!-- Footer -->
