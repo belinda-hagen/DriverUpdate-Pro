@@ -17,6 +17,18 @@ const loadingTitle = document.getElementById('loadingTitle');
 const loadingSub = document.getElementById('loadingSub');
 const scanProgressFill = document.getElementById('scanProgressFill');
 const scanProgressText = document.getElementById('scanProgressText');
+const downloadIndicator = document.getElementById('downloadIndicator');
+const downloadIndicatorLabel = document.getElementById('downloadIndicatorLabel');
+const toolDownloadBanner = document.getElementById('toolDownloadBanner');
+const toolDownloadTitle = document.getElementById('toolDownloadTitle');
+const toolDownloadMessage = document.getElementById('toolDownloadMessage');
+const toolDownloadDismiss = document.getElementById('toolDownloadDismiss');
+const toolDownloadPause = document.getElementById('toolDownloadPause');
+const toolDownloadCancel = document.getElementById('toolDownloadCancel');
+const toolDownloadAction = document.getElementById('toolDownloadAction');
+const toolDownloadProgress = document.getElementById('toolDownloadProgress');
+const toolDownloadProgressFill = document.getElementById('toolDownloadProgressFill');
+const toolDownloadProgressText = document.getElementById('toolDownloadProgressText');
 
 // Window control buttons
 const minimizeBtn = document.getElementById('minimizeBtn');
@@ -34,6 +46,25 @@ let allDrivers = [];
 let currentFilter = 'all';
 let currentStatusFilter = 'all';
 let showImportantOnly = true; // Default to showing only important drivers
+let activeToolDownloadButton = null;
+let lastDownloadedToolPath = '';
+let activeNativeDownload = false;
+let activeDownloadId = '';
+let downloadPaused = false;
+let toolDownloadBannerDismissed = false;
+
+const pauseDownloadIcon = `
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+    <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+  </svg>
+`;
+
+const resumeDownloadIcon = `
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <polygon points="8,5 19,12 8,19"></polygon>
+  </svg>
+`;
 
 // List of important device categories to show
 const importantCategories = ['Display', 'MEDIA', 'Net', 'Bluetooth', 'Storage'];
@@ -113,9 +144,11 @@ if (closeBtn) {
 // GitHub button
 const githubBtn = document.getElementById('githubBtn');
 if (githubBtn) {
-  githubBtn.addEventListener('click', (e) => {
+  githubBtn.addEventListener('click', async (e) => {
     e.preventDefault();
-    window.electronAPI.openExternal('https://github.com/belinda-hagen/DriverUpdate-Pro');
+    await openExternalLink('https://github.com/belinda-hagen/DriverUpdate-Pro', {
+      failureMessage: 'Could not open the GitHub project page'
+    });
   });
 }
 
@@ -157,6 +190,299 @@ function showToast(title, message, type = 'info', duration = 4000) {
   }
 
   return toast;
+}
+
+async function openExternalLink(url, options = {}) {
+  const {
+    fallbackUrl = '',
+    successTitle = '',
+    successMessage = '',
+    failureMessage = 'Could not open link'
+  } = options;
+
+  const candidateUrl = typeof url === 'string' ? url.trim() : '';
+  if (!candidateUrl) {
+    showToast('Error', failureMessage, 'error', 3000);
+    return false;
+  }
+
+  try {
+    await window.electronAPI.openExternal(candidateUrl);
+    if (successTitle || successMessage) {
+      showToast(successTitle || 'Opening...', successMessage, 'info', 2500);
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to open external URL:', candidateUrl, error);
+
+    if (fallbackUrl && fallbackUrl !== candidateUrl) {
+      try {
+        await window.electronAPI.openExternal(fallbackUrl);
+        showToast(
+          successTitle || 'Opening...',
+          successMessage || 'Opened fallback download page instead.',
+          'warning',
+          3500
+        );
+        return true;
+      } catch (fallbackError) {
+        console.error('Failed to open fallback URL:', fallbackUrl, fallbackError);
+      }
+    }
+
+    showToast('Error', failureMessage, 'error', 3000);
+    return false;
+  }
+}
+
+function formatBytes(byteCount) {
+  if (!Number.isFinite(byteCount) || byteCount <= 0) {
+    return '0 B';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const exponent = Math.min(Math.floor(Math.log(byteCount) / Math.log(1024)), units.length - 1);
+  const value = byteCount / (1024 ** exponent);
+  return `${value.toFixed(value >= 100 || exponent === 0 ? 0 : 1)} ${units[exponent]}`;
+}
+
+function setToolDownloadProgress(percent, text) {
+  if (!toolDownloadProgress || !toolDownloadProgressFill || !toolDownloadProgressText) {
+    return;
+  }
+
+  if (percent === null || Number.isNaN(percent)) {
+    toolDownloadProgressFill.style.width = '100%';
+    toolDownloadProgressText.textContent = text || 'Working...';
+    return;
+  }
+
+  const boundedPercent = Math.max(0, Math.min(percent, 100));
+  toolDownloadProgressFill.style.width = `${boundedPercent}%`;
+  toolDownloadProgressText.textContent = text || `${Math.round(boundedPercent)}%`;
+}
+
+function updateDownloadIndicator(label = '', state = 'active') {
+  if (!downloadIndicator || !downloadIndicatorLabel) {
+    return;
+  }
+
+  if (!label) {
+    downloadIndicator.classList.add('hidden');
+    downloadIndicator.removeAttribute('data-state');
+    return;
+  }
+
+  downloadIndicator.classList.remove('hidden');
+  downloadIndicator.dataset.state = state;
+  downloadIndicatorLabel.textContent = label;
+}
+
+function showToolDownloadBanner(title, message, options = {}) {
+  if (!toolDownloadBanner) {
+    return;
+  }
+
+  const {
+    showProgress = false,
+    progressPercent = 0,
+    progressText = '0%',
+    showAction = false,
+    actionLabel = 'Open Folder',
+    showPause = false,
+    pauseLabel = 'Pause',
+    showCancel = false,
+    forceShow = false
+  } = options;
+
+  toolDownloadTitle.textContent = title;
+  toolDownloadMessage.textContent = message;
+  if (forceShow) {
+    toolDownloadBannerDismissed = false;
+  }
+  if (!toolDownloadBannerDismissed || forceShow) {
+    toolDownloadBanner.classList.remove('hidden');
+  }
+  toolDownloadProgress.classList.toggle('hidden', !showProgress);
+  toolDownloadPause.classList.toggle('hidden', !showPause);
+  toolDownloadPause.innerHTML = pauseLabel === 'Resume' ? resumeDownloadIcon : pauseDownloadIcon;
+  toolDownloadPause.title = pauseLabel;
+  toolDownloadPause.setAttribute('aria-label', pauseLabel);
+  toolDownloadCancel.classList.toggle('hidden', !showCancel);
+  toolDownloadAction.classList.toggle('hidden', !showAction);
+  toolDownloadAction.textContent = actionLabel;
+
+  if (showProgress) {
+    setToolDownloadProgress(progressPercent, progressText);
+  }
+}
+
+function resetActiveToolDownloadButton() {
+  activeNativeDownload = false;
+  activeDownloadId = '';
+  downloadPaused = false;
+  if (!activeToolDownloadButton) {
+    return;
+  }
+
+  activeToolDownloadButton.disabled = false;
+  if (activeToolDownloadButton.dataset.defaultContent) {
+    activeToolDownloadButton.innerHTML = activeToolDownloadButton.dataset.defaultContent;
+  }
+  activeToolDownloadButton = null;
+}
+
+function isNvidiaDisplayDriver(driver) {
+  if (!driver) {
+    return false;
+  }
+
+  const manufacturer = `${driver.Manufacturer || ''}`.toLowerCase();
+  const deviceName = `${driver.DeviceName || ''}`.toLowerCase();
+  const category = `${driver.category || ''}`.toLowerCase();
+  const deviceClass = `${driver.DeviceClass || ''}`.toLowerCase();
+
+  const looksLikeNvidiaGpu = manufacturer.includes('nvidia')
+    || deviceName.includes('nvidia')
+    || deviceName.includes('geforce')
+    || deviceName.includes('quadro')
+    || deviceName.includes('rtx')
+    || deviceName.includes('gtx');
+
+  return looksLikeNvidiaGpu && (category === 'display' || deviceClass.includes('display'));
+}
+
+function getPrimaryNvidiaDriver() {
+  return allDrivers.find(driver => isNvidiaDisplayDriver(driver)) || null;
+}
+
+function getDriverFromCard(card) {
+  const driverKey = card?.dataset?.driverKey;
+  if (!driverKey) {
+    return null;
+  }
+
+  return allDrivers.find(driver => driver.driverKey === driverKey) || null;
+}
+
+async function startNvidiaDriverDownload(driver, btn = null, fallbackUrl = '') {
+  if (!driver) {
+    showToast('Scan Required', 'Scan drivers first so the app can detect your NVIDIA GPU.', 'warning', 4000);
+    return false;
+  }
+
+  if (activeNativeDownload) {
+    showToast('Download In Progress', 'Please wait for the current NVIDIA download to finish.', 'info', 3000);
+    return false;
+  }
+
+  if (btn) {
+    if (!btn.dataset.defaultContent) {
+      btn.dataset.defaultContent = btn.innerHTML;
+    }
+    activeToolDownloadButton = btn;
+    btn.disabled = true;
+    btn.textContent = 'Starting Download...';
+  }
+
+  activeNativeDownload = true;
+  lastDownloadedToolPath = '';
+
+  showToast('Preparing Download', 'Resolving the latest NVIDIA package for your GPU.', 'info', 2500);
+
+  showToolDownloadBanner(
+    'Preparing NVIDIA Driver',
+    'Resolving the latest official package for your GPU.',
+    {
+      showProgress: true,
+      progressPercent: 0,
+      progressText: 'Resolving...',
+      forceShow: true
+    }
+  );
+
+  const result = await window.electronAPI.downloadNvidiaDriver(driver);
+  if (result?.success) {
+    return true;
+  }
+
+  resetActiveToolDownloadButton();
+  showToolDownloadBanner(
+    'Driver Download Could Not Start',
+    result?.error || 'Could not resolve a direct NVIDIA package for this GPU.',
+    {
+      showProgress: false,
+      showAction: false
+    }
+  );
+
+  const fallbackDriverUrl = fallbackUrl || getManufacturerUrl(driver.Manufacturer, driver.DeviceName);
+  await openExternalLink(fallbackDriverUrl, {
+    successTitle: 'Opening Fallback',
+    successMessage: 'Opened NVIDIA\'s manual download page instead.',
+    failureMessage: 'Could not open the NVIDIA driver page'
+  });
+  return false;
+}
+
+async function startToolDownload(btn) {
+  const url = btn.dataset.toolUrl;
+  const fallbackUrl = btn.dataset.toolFallbackUrl || '';
+  const fileName = btn.dataset.downloadFileName || '';
+
+  if (!url) {
+    showToast('Error', 'Missing download URL', 'error', 3000);
+    return;
+  }
+
+  if (activeToolDownloadButton && activeToolDownloadButton !== btn) {
+    showToast('Download In Progress', 'Please wait for the current tool download to finish.', 'info', 3000);
+    return;
+  }
+
+  if (!btn.dataset.defaultContent) {
+    btn.dataset.defaultContent = btn.innerHTML;
+  }
+
+  activeToolDownloadButton = btn;
+  activeNativeDownload = true;
+  btn.disabled = true;
+  btn.textContent = 'Starting Download...';
+  lastDownloadedToolPath = '';
+
+  showToolDownloadBanner(
+    'Preparing Download',
+    'Saving the selected package to your Downloads folder.',
+    {
+      showProgress: true,
+      progressPercent: 0,
+      progressText: 'Preparing...',
+      forceShow: true
+    }
+  );
+
+  const result = await window.electronAPI.downloadFile({ url, fileName });
+  if (result?.success) {
+    return;
+  }
+
+  resetActiveToolDownloadButton();
+  showToolDownloadBanner(
+    'Download Could Not Start',
+    result?.error || 'The NVIDIA download could not be started from the app.',
+    {
+      showProgress: false,
+      showAction: false
+    }
+  );
+
+  if (fallbackUrl) {
+    await openExternalLink(fallbackUrl, {
+      successTitle: 'Opening Fallback',
+      successMessage: 'Opened the NVIDIA download page instead.',
+      failureMessage: 'Could not open the NVIDIA download page'
+    });
+  }
 }
 
 // Update scan progress
@@ -419,6 +745,130 @@ window.electronAPI.onUpdateStatus((data) => {
   }
 });
 
+window.electronAPI.onFileDownloadStatus((data) => {
+  switch (data.status) {
+    case 'started':
+      activeDownloadId = data.downloadId || activeDownloadId;
+      downloadPaused = false;
+      updateDownloadIndicator('Download starting...', 'active');
+      showToast('Download Started', `${data.fileName} is being saved to your Downloads folder.`, 'info', 3000);
+      showToolDownloadBanner(
+        'Downloading NVIDIA Driver',
+        `${data.fileName} is being saved to your Downloads folder.`,
+        {
+          showProgress: true,
+          progressPercent: 0,
+          progressText: 'Starting...',
+          showPause: true,
+          pauseLabel: 'Pause',
+          showCancel: true
+        }
+      );
+      break;
+
+    case 'downloading': {
+      activeDownloadId = data.downloadId || activeDownloadId;
+      downloadPaused = false;
+      const progressText = data.percent === null
+        ? `${formatBytes(data.receivedBytes)} downloaded`
+        : `${Math.round(data.percent)}%`;
+      const detailText = data.totalBytes > 0
+        ? `${formatBytes(data.receivedBytes)} of ${formatBytes(data.totalBytes)}`
+        : `${formatBytes(data.receivedBytes)} downloaded`;
+
+      updateDownloadIndicator(`Downloading ${progressText}`, 'active');
+      showToolDownloadBanner(
+        'Downloading NVIDIA Driver',
+        detailText,
+        {
+          showProgress: true,
+          progressPercent: data.percent ?? 100,
+          progressText,
+          showPause: true,
+          pauseLabel: 'Pause',
+          showCancel: true
+        }
+      );
+      break;
+    }
+
+    case 'paused': {
+      downloadPaused = true;
+      const currentPercent = parseFloat(toolDownloadProgressFill.style.width) || 0;
+      const currentText = toolDownloadProgressText.textContent || `${Math.round(currentPercent)}%`;
+      updateDownloadIndicator(`Paused ${currentText}`, 'paused');
+      showToolDownloadBanner(
+        'Download Paused',
+        `${data.fileName} is paused. Resume when ready.`,
+        {
+          showProgress: true,
+          progressPercent: currentPercent,
+          progressText: currentText,
+          showPause: true,
+          pauseLabel: 'Resume',
+          showCancel: true
+        }
+      );
+      showToast('Download Paused', `${data.fileName} has been paused.`, 'warning', 2500);
+      break;
+    }
+
+    case 'resumed': {
+      downloadPaused = false;
+      const currentPercent = parseFloat(toolDownloadProgressFill.style.width) || 0;
+      const currentText = toolDownloadProgressText.textContent || `${Math.round(currentPercent)}%`;
+      updateDownloadIndicator(`Downloading ${currentText}`, 'active');
+      showToolDownloadBanner(
+        'Resuming NVIDIA Driver',
+        `${data.fileName} is resuming.`,
+        {
+          showProgress: true,
+          progressPercent: currentPercent,
+          progressText: currentText,
+          showPause: true,
+          pauseLabel: 'Pause',
+          showCancel: true
+        }
+      );
+      showToast('Download Resumed', `${data.fileName} is downloading again.`, 'info', 2500);
+      break;
+    }
+
+    case 'completed':
+      lastDownloadedToolPath = data.savePath || '';
+      resetActiveToolDownloadButton();
+      updateDownloadIndicator('Download ready', 'ready');
+      showToolDownloadBanner(
+        'Download Ready',
+        `${data.fileName} was saved to ${data.savePath}`,
+        {
+          showProgress: false,
+          showAction: Boolean(lastDownloadedToolPath),
+          actionLabel: 'Open Folder'
+        }
+      );
+      showToast('Download Complete', `${data.fileName} is ready in your Downloads folder.`, 'success', 4000);
+      break;
+
+    case 'interrupted':
+    case 'cancelled':
+    case 'error':
+      resetActiveToolDownloadButton();
+      updateDownloadIndicator(data.status === 'cancelled' ? '' : 'Download failed', data.status === 'cancelled' ? 'active' : 'paused');
+      showToolDownloadBanner(
+        'Download Failed',
+        data.message || 'The NVIDIA download did not complete.',
+        {
+          showProgress: false,
+          showAction: Boolean(lastDownloadedToolPath),
+          actionLabel: 'Open Folder'
+        }
+      );
+      showToast('Download Failed', data.message || 'The NVIDIA download did not complete.', 'error', 4000);
+      break;
+  }
+});
+
 // Update action button click
 updateAction.addEventListener('click', async () => {
   if (updateDownloaded) {
@@ -436,6 +886,68 @@ updateAction.addEventListener('click', async () => {
 dismissUpdate.addEventListener('click', () => {
   hideUpdateBanner();
 });
+
+if (toolDownloadDismiss) {
+  toolDownloadDismiss.addEventListener('click', () => {
+    toolDownloadBannerDismissed = true;
+    toolDownloadBanner.classList.add('hidden');
+  });
+}
+
+if (downloadIndicator) {
+  downloadIndicator.addEventListener('click', () => {
+    if (toolDownloadBanner) {
+      toolDownloadBannerDismissed = false;
+      toolDownloadBanner.classList.remove('hidden');
+    }
+  });
+}
+
+if (toolDownloadAction) {
+  toolDownloadAction.addEventListener('click', async () => {
+    if (!lastDownloadedToolPath) {
+      return;
+    }
+
+    try {
+      await window.electronAPI.showItemInFolder(lastDownloadedToolPath);
+    } catch (error) {
+      showToast('Error', 'Could not open the downloaded file location', 'error', 3000);
+    }
+  });
+}
+
+if (toolDownloadPause) {
+  toolDownloadPause.addEventListener('click', async () => {
+    if (!activeDownloadId) {
+      return;
+    }
+
+    const result = downloadPaused
+      ? await window.electronAPI.resumeDownload(activeDownloadId)
+      : await window.electronAPI.pauseDownload(activeDownloadId);
+
+    if (!result?.success) {
+      showToast('Error', result?.error || 'Could not change the download state.', 'error', 3000);
+    }
+  });
+}
+
+if (toolDownloadCancel) {
+  toolDownloadCancel.addEventListener('click', async () => {
+    if (!activeDownloadId) {
+      return;
+    }
+
+    const result = await window.electronAPI.cancelDownload(activeDownloadId);
+    if (!result?.success) {
+      showToast('Error', result?.error || 'Could not cancel the download.', 'error', 3000);
+      return;
+    }
+
+    showToast('Cancelling Download', 'Stopping the current NVIDIA package download.', 'warning', 2500);
+  });
+}
 
 // Auto update check toggle
 if (autoUpdateCheckToggle) {
@@ -576,13 +1088,32 @@ async function init() {
   document.querySelectorAll('.tool-card-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const url = btn.dataset.toolUrl;
-      if (!url) return;
-      try {
-        await window.electronAPI.openExternal(url);
-        showToast('Opening...', `Launching ${btn.textContent.trim()}`, 'info', 2000);
-      } catch (e) {
-        showToast('Error', 'Could not open link', 'error', 3000);
+      if (btn.dataset.downloadMode === 'nvidia-driver') {
+        const nvidiaDriver = getPrimaryNvidiaDriver();
+        const fallbackUrl = btn.dataset.toolFallbackUrl || url;
+        const started = await startNvidiaDriverDownload(nvidiaDriver, btn, fallbackUrl);
+        if (!started && !nvidiaDriver && fallbackUrl) {
+          await openExternalLink(fallbackUrl, {
+            successTitle: 'Opening Fallback',
+            successMessage: 'Opened NVIDIA\'s manual driver page because no GPU scan result was available.',
+            failureMessage: 'Could not open the NVIDIA driver page'
+          });
+        }
+        return;
       }
+
+      if (btn.dataset.downloadMode === 'native') {
+        await startToolDownload(btn);
+        return;
+      }
+
+      const fallbackUrl = btn.dataset.toolFallbackUrl;
+      await openExternalLink(url, {
+        fallbackUrl,
+        successTitle: 'Opening...',
+        successMessage: `Launching ${btn.textContent.trim()}`,
+        failureMessage: 'Could not open the selected tool'
+      });
     });
   });
   
@@ -680,8 +1211,9 @@ async function scanDrivers() {
     // Filter and process drivers
     allDrivers = drivers
       .filter(d => d.DeviceName && d.DeviceName.trim() !== '')
-      .map(d => ({
+      .map((d, index) => ({
         ...d,
+        driverKey: d.DeviceID || `${d.Manufacturer || 'unknown'}-${d.DeviceName || 'device'}-${index}`,
         // Use status from update checker if available, otherwise fallback
         status: d.status || getDriverStatus(d),
         category: getDeviceCategory(d.DeviceClass),
@@ -940,10 +1472,18 @@ function renderDrivers() {
   
   // Add click handlers
   document.querySelectorAll('.driver-card').forEach(card => {
-    card.addEventListener('click', () => {
+    card.addEventListener('click', async () => {
+      const driver = getDriverFromCard(card);
+      if (isNvidiaDisplayDriver(driver)) {
+        await startNvidiaDriverDownload(driver);
+        return;
+      }
+
       const url = card.dataset.url;
       if (url) {
-        window.electronAPI.openExternal(url);
+        await openExternalLink(url, {
+          failureMessage: 'Could not open the driver download page'
+        });
       }
     });
   });
@@ -989,7 +1529,7 @@ function createDriverCard(driver) {
   }
 
   return `
-    <div class="driver-card ${statusClass}" data-url="${driver.downloadUrl || getManufacturerUrl(driver.Manufacturer, driver.DeviceName)}">
+    <div class="driver-card ${statusClass}" data-url="${escapeAttribute(driver.downloadUrl || getManufacturerUrl(driver.Manufacturer, driver.DeviceName))}" data-driver-key="${escapeAttribute(driver.driverKey)}">
       <div class="driver-icon">${icon}</div>
       <div class="driver-info">
         <div class="driver-name">${escapeHtml(driver.DeviceName)}</div>
@@ -1034,6 +1574,10 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function escapeAttribute(text) {
+  return escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 // Keyboard Navigation
 document.addEventListener('keydown', (e) => {
   // Escape to close modals
@@ -1075,9 +1619,17 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const focusedCard = document.activeElement?.closest('.driver-card');
     if (focusedCard) {
+      const driver = getDriverFromCard(focusedCard);
+      if (isNvidiaDisplayDriver(driver)) {
+        startNvidiaDriverDownload(driver);
+        return;
+      }
+
       const url = focusedCard.dataset.url;
       if (url) {
-        window.electronAPI.openExternal(url);
+        openExternalLink(url, {
+          failureMessage: 'Could not open the driver download page'
+        });
       }
     }
   }
@@ -1116,7 +1668,11 @@ function loadCachedResults() {
       
       // Only use cache if less than 4 hours old
       if (ageHours < 4 && drivers && drivers.length > 0) {
-        allDrivers = drivers;
+        allDrivers = drivers.map((driver, index) => ({
+          ...driver,
+          driverKey: driver.driverKey || driver.DeviceID || `${driver.Manufacturer || 'unknown'}-${driver.DeviceName || 'device'}-${index}`,
+          downloadUrl: getManufacturerUrl(driver.Manufacturer, driver.DeviceName)
+        }));
         updateStats();
         renderDrivers();
         

@@ -3,6 +3,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   scanDrivers: () => ipcRenderer.invoke('scan-drivers'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  downloadFile: (options) => ipcRenderer.invoke('download-file', options),
+  downloadNvidiaDriver: (driver) => ipcRenderer.invoke('download-nvidia-driver', driver),
+  pauseDownload: (downloadId) => ipcRenderer.invoke('pause-download', downloadId),
+  resumeDownload: (downloadId) => ipcRenderer.invoke('resume-download', downloadId),
+  cancelDownload: (downloadId) => ipcRenderer.invoke('cancel-download', downloadId),
+  showItemInFolder: (filePath) => ipcRenderer.invoke('show-item-in-folder', filePath),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   
   // Window controls for custom title bar
@@ -23,5 +29,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   removeUpdateStatusListener: () => {
     ipcRenderer.removeAllListeners('update-status');
+  },
+  onFileDownloadStatus: (callback) => {
+    ipcRenderer.on('file-download-status', (event, data) => callback(data));
+  },
+  removeFileDownloadStatusListener: () => {
+    ipcRenderer.removeAllListeners('file-download-status');
   }
 });

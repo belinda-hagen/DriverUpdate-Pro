@@ -130,8 +130,57 @@
 .title-bar-controls {
   display: flex;
   -webkit-app-region: no-drag;
+  align-items: center;
   gap: 2px;
   padding: 4px 8px;
+}
+
+.download-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 10px;
+  margin-right: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.download-indicator.hidden {
+  display: none;
+}
+
+.download-indicator:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.download-indicator[data-state="paused"] {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.download-indicator[data-state="ready"] {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.download-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06);
+}
+
+.download-indicator-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .title-bar-btn {
@@ -1739,6 +1788,42 @@ body {
 .tool-card-btn:hover {
   background: var(--accent-hover);
   transform: translateX(2px);
+}
+
+.tool-card-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+
+.tool-card-btn:disabled:hover {
+  background: var(--accent);
+  transform: none;
+}
+
+.tool-download-banner {
+  min-width: 0;
+  max-width: none;
+}
+
+.tool-download-banner .btn-update-action.hidden {
+  display: none;
+}
+
+.tool-download-banner .btn-update-dismiss.hidden {
+  display: none;
+}
+
+.icon-only-btn {
+  width: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-only-btn svg {
+  flex-shrink: 0;
 }
 
 .tools-footer-note {

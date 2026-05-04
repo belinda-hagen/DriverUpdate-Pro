@@ -31,6 +31,10 @@
       <span class="version-badge" id="versionBadge">v1.3.0</span>
     </div>
     <div class="title-bar-controls">
+      <button class="download-indicator hidden" id="downloadIndicator" title="Show download status">
+        <span class="download-indicator-dot"></span>
+        <span class="download-indicator-label" id="downloadIndicatorLabel">Download 0%</span>
+      </button>
       <button class="title-bar-btn minimize-btn" id="minimizeBtn" title="Minimize">
         <svg width="12" height="12" viewBox="0 0 12 12">
           <rect x="2" y="5.5" width="8" height="1" fill="currentColor"/>
@@ -189,20 +193,20 @@
           <p>Install the official tool from your hardware manufacturer to keep drivers updated automatically and safely.</p>
         </div>
         <div class="tools-grid">
-          <!-- NVIDIA App -->
+          <!-- NVIDIA Driver -->
           <div class="tool-card">
             <div class="tool-card-top">
               <div class="tool-icon tool-icon-nvidia">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8.948 8.798v-1.43a6.7 6.7 0 0 1 .424-.018c3.922-.124 6.493 3.374 6.493 3.374s-2.774 3.851-5.75 3.851c-.398 0-.787-.064-1.157-.183V10.04c1.515.183 1.82.853 2.722 2.376l2.029-1.71s-1.48-1.943-3.976-1.943a6.74 6.74 0 0 0-.785.035m0-4.748v2.138l.424-.027c5.452-.184 9.01 4.473 9.01 4.473s-4.083 4.967-8.337 4.967c-.37 0-.733-.034-1.088-.097v1.32c.296.037.6.06.908.06 3.96 0 6.823-2.023 9.594-4.418.46.367 2.34 1.262 2.726 1.655-2.635 2.205-8.77 3.984-12.26 3.984-.336 0-.658-.02-.975-.05v1.86h15.014V4.05zm0 10.348v1.13c-3.66-.654-4.675-4.46-4.675-4.46s1.755-1.943 4.675-2.26v1.24h-.006c-1.532-.183-2.732 1.247-2.732 1.247s.677 2.41 2.738 3.103M2.328 10.97s2.165-3.197 6.62-3.538V6.24C3.5 6.638 0 11.054 0 11.054s1.982 5.736 8.948 6.394v-1.27c-5.114-.643-6.62-5.21-6.62-5.21z"/></svg>
               </div>
               <div class="tool-info">
-                <h3>NVIDIA App</h3>
-                <span class="tool-tag">GeForce / RTX / Quadro</span>
+                <h3>NVIDIA Driver Package</h3>
+                <span class="tool-tag">GeForce / RTX detected from scan</span>
               </div>
             </div>
-            <p class="tool-description">Official replacement for GeForce Experience. Auto-detects your GPU and installs the latest Game Ready or Studio drivers.</p>
-            <button class="tool-card-btn" data-tool-url="https://www.nvidia.com/en-us/software/nvidia-app/">
-              Get NVIDIA App
+            <p class="tool-description">Downloads the latest official NVIDIA driver package for the GPU detected in your scan. If direct detection fails, the app falls back to NVIDIA's manual driver page.</p>
+            <button class="tool-card-btn" data-tool-url="https://www.nvidia.com/Download/index.aspx" data-tool-fallback-url="https://www.nvidia.com/Download/index.aspx" data-download-mode="nvidia-driver">
+              Download NVIDIA Driver
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"/>
                 <polyline points="12 5 19 12 12 19"/>
@@ -280,6 +284,44 @@
             <line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
           For Realtek and other component-level drivers, check your laptop or motherboard manufacturer's support site.
+        </div>
+      </div>
+
+      <div class="update-banner tool-download-banner hidden" id="toolDownloadBanner">
+        <div class="update-banner-content">
+          <div class="update-banner-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </div>
+          <div class="update-banner-text">
+            <strong id="toolDownloadTitle">Preparing Download</strong>
+            <span id="toolDownloadMessage">The NVIDIA driver package will be saved to your Downloads folder.</span>
+          </div>
+        </div>
+        <div class="update-banner-actions">
+          <button class="btn-update-dismiss" id="toolDownloadDismiss">Hide</button>
+          <button class="btn-update-dismiss icon-only-btn hidden" id="toolDownloadPause" title="Pause download" aria-label="Pause download">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+              <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+            </svg>
+          </button>
+          <button class="btn-update-dismiss icon-only-btn hidden" id="toolDownloadCancel" title="Cancel download" aria-label="Cancel download">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <button class="btn-update-action hidden" id="toolDownloadAction">Open Folder</button>
+        </div>
+        <div class="update-progress hidden" id="toolDownloadProgress">
+          <div class="update-progress-bar">
+            <div class="update-progress-fill" id="toolDownloadProgressFill"></div>
+          </div>
+          <span class="update-progress-text" id="toolDownloadProgressText">0%</span>
         </div>
       </div>
     </main>
