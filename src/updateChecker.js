@@ -1,6 +1,8 @@
 // Driver Update Checker - Real version comparison with manufacturer APIs
 const https = require('https');
 const http = require('http');
+const { BrowserWindow } = require('electron');
+const { buildNvidiaDirectUrl } = require('./drivers');
 
 class DriverUpdateChecker {
   constructor() {
@@ -83,35 +85,206 @@ class DriverUpdateChecker {
            deviceName.includes('realtek');
   }
 
-  // NVIDIA driver check
-  async checkNvidiaDriver(driver) {
-    const currentVersion = this.parseVersion(driver.DriverVersion);
-    
-    // Use cached known latest versions (updated periodically)
-    // In production, you would call NVIDIA's API
-    const latestVersions = {
-      'geforce': '566.36',
-      'quadro': '566.36',
-      'rtx': '566.36',
-      'gtx': '566.36',
-      'default': '566.36'
-    };
+  getCachedValue(cacheKey) {
+    const cachedEntry = this.cache.get(cacheKey);
+    if (!cachedEntry) {
+      return null;
+    }
 
-    let productType = 'default';
-    const deviceName = (driver.DeviceName || '').toLowerCase();
-    for (const key of Object.keys(latestVersions)) {
-      if (deviceName.includes(key)) {
-        productType = key;
-        break;
+    if (cachedEntry.expiresAt <= Date.now()) {
+      this.cache.delete(cacheKey);
+      return null;
+    }
+
+    return cachedEntry.value;
+  }
+
+  setCachedValue(cacheKey, value) {
+    this.cache.set(cacheKey, {
+      value,
+      expiresAt: Date.now() + this.cacheTimeout
+    });
+    return value;
+  }
+
+  getNvidiaManualSearchParams(driver) {
+    const directUrl = typeof driver?.downloadUrl === 'string' && driver.downloadUrl.trim()
+      ? driver.downloadUrl.trim()
+      : buildNvidiaDirectUrl(driver?.DeviceName || '');
+
+    if (!directUrl) {
+      return null;
+    }
+
+    try {
+      const parsedUrl = new URL(directUrl);
+      const psid = parsedUrl.searchParams.get('psid');
+      const pfid = parsedUrl.searchParams.get('pfid');
+
+      if (!psid || !pfid) {
+        return null;
+      }
+
+      return {
+        psid,
+        pfid,
+        osid: parsedUrl.searchParams.get('osid') || '57',
+        lang: parsedUrl.searchParams.get('lang') || 'en-us'
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async fetchText(url) {
+    const response = await this.makeRequest(url, {
+      headers: {
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+    });
+
+    return typeof response === 'string' ? response : JSON.stringify(response);
+  }
+
+  normalizeNvidiaDriverVersion(versionStr) {
+    if (!versionStr) {
+      return '';
+    }
+
+    const normalized = String(versionStr).trim();
+    const publicVersionMatch = normalized.match(/(\d{3}\.\d{2})/);
+    if (publicVersionMatch) {
+      return publicVersionMatch[1];
+    }
+
+    if ((normalized.match(/\./g) || []).length >= 3) {
+      const digitsOnly = normalized.replace(/\D/g, '');
+      if (digitsOnly.length >= 5) {
+        const tail = digitsOnly.slice(-5);
+        return `${parseInt(tail.slice(0, 3), 10)}.${tail.slice(3)}`;
       }
     }
 
-    const latestVersion = latestVersions[productType];
-    const comparison = this.compareVersions(driver.DriverVersion, latestVersion);
+    return normalized.replace(/[^\d.]/g, '');
+  }
+
+  async resolveNvidiaResultPageVersion(resultId) {
+    const detailsWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true
+      }
+    });
+
+    try {
+      await detailsWindow.loadURL(`https://www.nvidia.com/Download/driverResults.aspx/${resultId}/en-us`);
+
+      const result = await detailsWindow.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const deadline = Date.now() + 10000;
+
+          const scan = () => {
+            const links = Array.from(document.querySelectorAll('a'));
+            const directLink = links.find((link) => /download\\.nvidia\\.com/i.test(link.href));
+            const bodyText = document.body ? document.body.innerText : '';
+            const versionMatch = bodyText.match(/Driver Version:\\s*([^|\\n]+)/i);
+
+            if (versionMatch || directLink || Date.now() > deadline) {
+              resolve({
+                version: versionMatch ? versionMatch[1].trim() : '',
+                link: directLink ? directLink.href : ''
+              });
+              return;
+            }
+
+            setTimeout(scan, 250);
+          };
+
+          scan();
+        });
+      `, true);
+
+      const matchedVersion = String(result?.version || '').match(/\d+\.\d+/)?.[0];
+      if (matchedVersion) {
+        return matchedVersion;
+      }
+
+      const directLinkVersion = String(result?.link || '').match(/\/Windows\/(\d+\.\d+)\//i)?.[1];
+      return directLinkVersion || null;
+    } finally {
+      if (!detailsWindow.isDestroyed()) {
+        detailsWindow.destroy();
+      }
+    }
+  }
+
+  async resolveLatestNvidiaVersion(driver) {
+    const searchParams = this.getNvidiaManualSearchParams(driver);
+    if (!searchParams) {
+      return null;
+    }
+
+    const cacheKey = `nvidia:${searchParams.psid}:${searchParams.pfid}:${searchParams.osid}:${searchParams.lang}`;
+    const cachedVersion = this.getCachedValue(cacheKey);
+    if (cachedVersion) {
+      return cachedVersion;
+    }
+
+    const driverTypes = ['1', '0'];
+
+    for (const dtcid of driverTypes) {
+      const manualSearchUrl = new URL('https://www.nvidia.com/Download/processFind.aspx');
+      manualSearchUrl.search = new URLSearchParams({
+        psid: searchParams.psid,
+        pfid: searchParams.pfid,
+        osid: searchParams.osid,
+        lang: searchParams.lang,
+        lid: '1',
+        whql: '',
+        ctk: '0',
+        dtcid
+      }).toString();
+
+      const html = await this.fetchText(manualSearchUrl.toString());
+      const matches = [...html.matchAll(/driverResults\.aspx\/(\d+)\/en-us'>([^<]+)/gi)]
+        .map((match) => ({ id: match[1], title: match[2].trim() }));
+
+      if (matches.length === 0) {
+        continue;
+      }
+
+      const preferredMatch = matches.find((match) => /game ready/i.test(match.title)) || matches[0];
+      const resolvedVersion = await this.resolveNvidiaResultPageVersion(preferredMatch.id);
+      if (resolvedVersion) {
+        return this.setCachedValue(cacheKey, resolvedVersion);
+      }
+    }
+
+    return null;
+  }
+
+  // NVIDIA driver check
+  async checkNvidiaDriver(driver) {
+    const currentVersion = this.normalizeNvidiaDriverVersion(driver.DriverVersion);
+    const latestVersion = await this.resolveLatestNvidiaVersion(driver);
+
+    if (!latestVersion) {
+      return {
+        status: 'unknown',
+        latestVersion: null,
+        updateAvailable: false,
+        checkedOnline: false,
+        manufacturer: 'NVIDIA'
+      };
+    }
+
+    const comparison = this.compareVersions(currentVersion, latestVersion);
 
     return {
       status: comparison < 0 ? 'update' : 'uptodate',
-      latestVersion: latestVersion,
+      latestVersion,
       updateAvailable: comparison < 0,
       checkedOnline: true,
       manufacturer: 'NVIDIA'

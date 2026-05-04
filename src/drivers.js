@@ -33,13 +33,13 @@ const nvidiaProductMapping = {
   'rtx 3050': { psid: 122, pfid: 1013, series: 'GeForce RTX 30 Series' },
   
   // GeForce RTX 20 Series
-  'rtx 2080 ti': { psid: 107, pfid: 899, series: 'GeForce RTX 20 Series' },
-  'rtx 2080 super': { psid: 107, pfid: 937, series: 'GeForce RTX 20 Series' },
-  'rtx 2080': { psid: 107, pfid: 900, series: 'GeForce RTX 20 Series' },
-  'rtx 2070 super': { psid: 107, pfid: 938, series: 'GeForce RTX 20 Series' },
-  'rtx 2070': { psid: 107, pfid: 901, series: 'GeForce RTX 20 Series' },
-  'rtx 2060 super': { psid: 107, pfid: 939, series: 'GeForce RTX 20 Series' },
-  'rtx 2060': { psid: 107, pfid: 915, series: 'GeForce RTX 20 Series' },
+  'rtx 2080 ti': { psid: 107, pfid: 877, series: 'GeForce RTX 20 Series' },
+  'rtx 2080 super': { psid: 107, pfid: 904, series: 'GeForce RTX 20 Series' },
+  'rtx 2080': { psid: 107, pfid: 879, series: 'GeForce RTX 20 Series' },
+  'rtx 2070 super': { psid: 107, pfid: 903, series: 'GeForce RTX 20 Series' },
+  'rtx 2070': { psid: 107, pfid: 880, series: 'GeForce RTX 20 Series' },
+  'rtx 2060 super': { psid: 107, pfid: 902, series: 'GeForce RTX 20 Series' },
+  'rtx 2060': { psid: 107, pfid: 887, series: 'GeForce RTX 20 Series' },
   
   // GeForce GTX 16 Series
   'gtx 1660 ti': { psid: 111, pfid: 917, series: 'GeForce GTX 16 Series' },
@@ -512,4 +512,10 @@ function getDeviceCategory(deviceClass) {
   if (classLower.includes('disk') || classLower.includes('storage')) return 'Storage';
   
   return 'Other';
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    buildNvidiaDirectUrl
+  };
 }
