@@ -687,7 +687,7 @@ const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
 const checkUpdatesBtn = document.getElementById('checkUpdatesBtn');
 const lastUpdateCheck = document.getElementById('lastUpdateCheck');
-const appVersionEl = document.getElementById('appVersion');
+const appVersionEls = document.querySelectorAll('[data-app-version]');
 
 let updateAvailableVersion = null;
 let updateDownloaded = false;
@@ -1008,9 +1008,9 @@ if (checkUpdatesBtn) {
 async function displayAppVersion() {
   try {
     const version = await window.electronAPI.getAppVersion();
-    if (appVersionEl) {
-      appVersionEl.textContent = `v${version}`;
-    }
+    appVersionEls.forEach((element) => {
+      element.textContent = `v${version}`;
+    });
     // Also update the version badge in the title bar
     const versionBadge = document.getElementById('versionBadge');
     if (versionBadge) {
