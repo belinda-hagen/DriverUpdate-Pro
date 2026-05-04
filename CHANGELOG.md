@@ -2,6 +2,31 @@
 
 All notable changes to DriverUpdate Pro will be documented in this file.
 
+## [1.2.0] - 2026-05-04
+
+### ✨ New Features
+
+- **Driver Tools Tab**: Added a dedicated Driver Tools tab for quick access to driver-related tools and download actions from within the app.
+- **Direct NVIDIA Driver Packages**: NVIDIA display drivers can now resolve and download the latest official package directly inside the app instead of only opening a browser page.
+- **NVIDIA Download Controls**: Added live download progress, pause, resume, cancel, folder reveal, and a persistent title-bar download indicator.
+- **Flexible NVIDIA Actions**: Users can now choose between **Direct package download** and **Smart link** mode in Settings.
+- **Startup Automation**: Added optional automatic NVIDIA package download after the startup scan when Direct package mode is enabled.
+- **Notification Center**: Added a title-bar notification button with a clearable history for downloads, update events, and other in-app notifications.
+- **Background Mode**: Added a close-to-tray option so the app can keep running in the background when the window is closed.
+
+### 🛠 Improvements
+
+- **Accurate NVIDIA Version Checks**: Replaced the stale hardcoded NVIDIA latest-version placeholder with a live lookup against NVIDIA's current DCH driver results.
+- **Correct NVIDIA Package Selection**: Fixed RTX 20 desktop product mappings and updated the NVIDIA lookup flow to prefer the current DCH branch over the older legacy branch.
+- **Automatic App Update Downloads**: When automatic app update checks are enabled, available app updates now start downloading automatically.
+- **Version Consistency**: Normalized the app version to **1.2.0** across package metadata, UI badges, and the generated Windows installer.
+- **Settings Polish**: Improved the Settings layout, added a proper close button to the notification panel, and cleaned up NVIDIA settings visuals.
+
+### ✅ Validation
+
+- Verified with repeated successful `npm run build` runs.
+- Confirmed packaged installer output as **DriverUpdate Pro Setup 1.2.0.exe**.
+
 ## [1.1.0] - 2026-01-30
 
 ### ✨ New Features
