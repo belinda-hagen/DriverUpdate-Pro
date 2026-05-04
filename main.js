@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -12,6 +12,10 @@ app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 let mainWindow;
 const updateChecker = new DriverUpdateChecker();
 const activeFileDownloads = new Map();
+let appTray = null;
+let closeToTrayEnabled = false;
+let isQuitting = false;
+let hasShownTrayBalloon = false;
 
 // Auto-updater configuration
 autoUpdater.autoDownload = false; // Let user decide when to download
@@ -27,6 +31,80 @@ autoUpdater.setFeedURL({
 // Enable logging for debugging
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'debug';
+
+function getAppIconPath() {
+  return process.platform === 'win32'
+    ? path.join(__dirname, 'assets', 'icon.ico')
+    : path.join(__dirname, 'assets', 'icon.png');
+}
+
+function showMainWindow() {
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function destroyTray() {
+  if (appTray) {
+    appTray.destroy();
+    appTray = null;
+  }
+}
+
+function createTray() {
+  if (appTray) {
+    return appTray;
+  }
+
+  appTray = new Tray(getAppIconPath());
+  appTray.setToolTip('DriverUpdate Pro');
+  appTray.setContextMenu(Menu.buildFromTemplate([
+    {
+      label: 'Open DriverUpdate Pro',
+      click: () => showMainWindow()
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Exit',
+      click: () => {
+        isQuitting = true;
+        destroyTray();
+        app.quit();
+      }
+    }
+  ]));
+  appTray.on('click', () => showMainWindow());
+
+  return appTray;
+}
+
+function hideWindowToTray() {
+  if (!mainWindow) {
+    return;
+  }
+
+  createTray();
+  mainWindow.hide();
+
+  if (process.platform === 'win32' && appTray && !hasShownTrayBalloon) {
+    appTray.displayBalloon({
+      title: 'DriverUpdate Pro',
+      content: 'Still running in the background. Use the tray icon to reopen or exit.',
+      iconType: 'info'
+    });
+    hasShownTrayBalloon = true;
+  }
+}
 
 function sendFileDownloadStatus(payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -449,18 +527,13 @@ function startManagedDownload(downloadUrl, preferredFileName = '') {
 }
 
 function createWindow() {
-  // Use .ico for Windows, .png for other platforms
-  const iconPath = process.platform === 'win32' 
-    ? path.join(__dirname, 'assets', 'icon.ico')
-    : path.join(__dirname, 'assets', 'icon.png');
-
   mainWindow = new BrowserWindow({
     width: 950,
     height: 750,
     minWidth: 800,
     minHeight: 600,
     title: 'DriverUpdate Pro',
-    icon: iconPath,
+    icon: getAppIconPath(),
     backgroundColor: '#1a1a2e',
     frame: false,
     titleBarStyle: 'hidden',
@@ -478,9 +551,22 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
   });
+
+  mainWindow.on('close', (event) => {
+    if (!closeToTrayEnabled || isQuitting) {
+      return;
+    }
+
+    event.preventDefault();
+    hideWindowToTray();
+  });
 }
 
 app.whenReady().then(createWindow);
+
+app.on('before-quit', () => {
+  isQuitting = true;
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -491,6 +577,8 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  } else {
+    showMainWindow();
   }
 });
 
@@ -601,6 +689,18 @@ ipcMain.handle('show-item-in-folder', async (event, filePath) => {
   return true;
 });
 
+ipcMain.handle('set-close-to-tray-enabled', async (event, enabled) => {
+  closeToTrayEnabled = Boolean(enabled);
+
+  if (closeToTrayEnabled) {
+    createTray();
+  } else if (mainWindow && mainWindow.isVisible()) {
+    destroyTray();
+  }
+
+  return { success: true, enabled: closeToTrayEnabled };
+});
+
 // Window control handlers for custom title bar
 ipcMain.handle('window-minimize', () => {
   mainWindow.minimize();
@@ -614,8 +714,20 @@ ipcMain.handle('window-maximize', () => {
   }
 });
 
-ipcMain.handle('window-close', () => {
+ipcMain.handle('window-close', (event, options = {}) => {
+  const shouldCloseToTray = typeof options.closeToTray === 'boolean'
+    ? options.closeToTray
+    : closeToTrayEnabled;
+
+  closeToTrayEnabled = shouldCloseToTray;
+
+  if (shouldCloseToTray) {
+    hideWindowToTray();
+    return { background: true };
+  }
+
   mainWindow.close();
+  return { background: false };
 });
 
 ipcMain.handle('window-is-maximized', () => {

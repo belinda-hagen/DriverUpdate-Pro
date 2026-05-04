@@ -8,13 +8,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pauseDownload: (downloadId) => ipcRenderer.invoke('pause-download', downloadId),
   resumeDownload: (downloadId) => ipcRenderer.invoke('resume-download', downloadId),
   cancelDownload: (downloadId) => ipcRenderer.invoke('cancel-download', downloadId),
+  setCloseToTrayEnabled: (enabled) => ipcRenderer.invoke('set-close-to-tray-enabled', enabled),
   showItemInFolder: (filePath) => ipcRenderer.invoke('show-item-in-folder', filePath),
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   
   // Window controls for custom title bar
   minimizeWindow: () => ipcRenderer.invoke('window-minimize'),
   maximizeWindow: () => ipcRenderer.invoke('window-maximize'),
-  closeWindow: () => ipcRenderer.invoke('window-close'),
+  closeWindow: (options) => ipcRenderer.invoke('window-close', options),
   isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
   
   // Auto-updater API

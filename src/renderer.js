@@ -138,7 +138,9 @@ if (maximizeBtn) {
   maximizeBtn.addEventListener('click', () => window.electronAPI.maximizeWindow());
 }
 if (closeBtn) {
-  closeBtn.addEventListener('click', () => window.electronAPI.closeWindow());
+  closeBtn.addEventListener('click', () => {
+    window.electronAPI.closeWindow({ closeToTray: getSettings().closeToTray });
+  });
 }
 
 // GitHub button
@@ -580,12 +582,14 @@ const settingsModal = document.getElementById('settingsModal');
 const settingsBtn = document.getElementById('settingsBtn');
 const closeSettingsBtn = document.getElementById('closeSettings');
 const autoScanToggle = document.getElementById('autoScanToggle');
+const closeToTrayToggle = document.getElementById('closeToTrayToggle');
 const darkModeToggle = document.getElementById('darkModeToggle');
 const autoUpdateCheckToggle = document.getElementById('autoUpdateCheckToggle');
 
 function getSettings() {
   const defaults = {
     autoScan: true,
+    closeToTray: false,
     darkMode: true,
     autoUpdateCheck: true
   };
@@ -608,6 +612,9 @@ function initSettings() {
   if (autoScanToggle) {
     autoScanToggle.checked = settings.autoScan;
   }
+  if (closeToTrayToggle) {
+    closeToTrayToggle.checked = settings.closeToTray;
+  }
   if (darkModeToggle) {
     darkModeToggle.checked = settings.darkMode;
   }
@@ -617,6 +624,7 @@ function initSettings() {
   
   // Apply dark mode from settings
   document.documentElement.setAttribute('data-theme', settings.darkMode ? 'dark' : 'light');
+  window.electronAPI.setCloseToTrayEnabled(settings.closeToTray);
 }
 
 function openSettings() {
@@ -639,6 +647,24 @@ autoScanToggle.addEventListener('change', () => {
   settings.autoScan = autoScanToggle.checked;
   saveSettings(settings);
 });
+
+if (closeToTrayToggle) {
+  closeToTrayToggle.addEventListener('change', async () => {
+    const settings = getSettings();
+    settings.closeToTray = closeToTrayToggle.checked;
+    saveSettings(settings);
+    await window.electronAPI.setCloseToTrayEnabled(settings.closeToTray);
+
+    showToast(
+      settings.closeToTray ? 'Background Mode Enabled' : 'Background Mode Disabled',
+      settings.closeToTray
+        ? 'Closing the window will keep DriverUpdate Pro running in the tray.'
+        : 'Closing the window will fully exit DriverUpdate Pro.',
+      'info',
+      3000
+    );
+  });
+}
 
 darkModeToggle.addEventListener('change', () => {
   const settings = getSettings();
