@@ -299,7 +299,7 @@ async function resolveNvidiaDriverDownloadFromManualSearch(driver) {
     return null;
   }
 
-  const driverTypes = ['0', '1'];
+  const driverTypes = ['1', '0'];
 
   for (const dtcid of driverTypes) {
     const manualSearchUrl = new URL('https://www.nvidia.com/Download/processFind.aspx');

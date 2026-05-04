@@ -513,3 +513,9 @@ function getDeviceCategory(deviceClass) {
   
   return 'Other';
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    buildNvidiaDirectUrl
+  };
+}

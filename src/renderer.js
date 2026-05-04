@@ -29,6 +29,13 @@ const toolDownloadAction = document.getElementById('toolDownloadAction');
 const toolDownloadProgress = document.getElementById('toolDownloadProgress');
 const toolDownloadProgressFill = document.getElementById('toolDownloadProgressFill');
 const toolDownloadProgressText = document.getElementById('toolDownloadProgressText');
+const notificationBtn = document.getElementById('notificationBtn');
+const notificationCount = document.getElementById('notificationCount');
+const notificationPanel = document.getElementById('notificationPanel');
+const notificationList = document.getElementById('notificationList');
+const notificationEmpty = document.getElementById('notificationEmpty');
+const clearNotificationsBtn = document.getElementById('clearNotificationsBtn');
+const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
 
 // Window control buttons
 const minimizeBtn = document.getElementById('minimizeBtn');
@@ -52,6 +59,11 @@ let activeNativeDownload = false;
 let activeDownloadId = '';
 let downloadPaused = false;
 let toolDownloadBannerDismissed = false;
+let startupAutoDownloadHandled = false;
+let updateDownloadStarted = false;
+let unreadNotificationCount = 0;
+let isNotificationPanelOpen = false;
+const notifications = [];
 
 const pauseDownloadIcon = `
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -155,18 +167,77 @@ if (githubBtn) {
 }
 
 // Toast Notification System
+const toastIcons = {
+  success: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+  warning: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  error: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+  info: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+};
+
+function renderNotifications() {
+  if (!notificationList || !notificationEmpty || !notificationCount || !notificationBtn) {
+    return;
+  }
+
+  notificationList.innerHTML = notifications.map((notification) => `
+    <div class="notification-item">
+      <div class="notification-item-icon ${notification.type}">${toastIcons[notification.type] || toastIcons.info}</div>
+      <div class="notification-item-body">
+        <div class="notification-item-title">${escapeHtml(notification.title)}</div>
+        ${notification.message ? `<div class="notification-item-message">${escapeHtml(notification.message)}</div>` : ''}
+        <div class="notification-item-time">${escapeHtml(notification.timestamp)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  notificationEmpty.classList.toggle('hidden', notifications.length > 0);
+  notificationList.classList.toggle('hidden', notifications.length === 0);
+  notificationCount.textContent = unreadNotificationCount > 99 ? '99+' : String(unreadNotificationCount);
+  notificationCount.classList.toggle('hidden', unreadNotificationCount === 0);
+  notificationBtn.classList.toggle('active', isNotificationPanelOpen);
+}
+
+function addNotification(title, message, type = 'info') {
+  notifications.unshift({
+    title,
+    message,
+    type,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  });
+
+  if (notifications.length > 50) {
+    notifications.length = 50;
+  }
+
+  if (!isNotificationPanelOpen) {
+    unreadNotificationCount += 1;
+  }
+
+  renderNotifications();
+}
+
+function setNotificationPanelOpen(isOpen) {
+  if (!notificationPanel) {
+    return;
+  }
+
+  isNotificationPanelOpen = isOpen;
+  notificationPanel.classList.toggle('hidden', !isOpen);
+
+  if (isOpen) {
+    unreadNotificationCount = 0;
+  }
+
+  renderNotifications();
+}
+
 function showToast(title, message, type = 'info', duration = 4000) {
-  const icons = {
-    success: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-    warning: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    error: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-    info: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
-  };
+  addNotification(title, message, type);
 
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.innerHTML = `
-    <div class="toast-icon ${type}">${icons[type]}</div>
+    <div class="toast-icon ${type}">${toastIcons[type] || toastIcons.info}</div>
     <div class="toast-content">
       <div class="toast-title">${title}</div>
       ${message ? `<div class="toast-message">${message}</div>` : ''}
@@ -368,6 +439,22 @@ function getDriverFromCard(card) {
 }
 
 async function startNvidiaDriverDownload(driver, btn = null, fallbackUrl = '') {
+  const settings = getSettings();
+  const fallbackDriverUrl = fallbackUrl || (driver
+    ? getManufacturerUrl(driver.Manufacturer, driver.DeviceName)
+    : 'https://www.nvidia.com/Download/index.aspx');
+
+  if (settings.nvidiaDownloadMode === 'smart-link') {
+    await openExternalLink(fallbackDriverUrl, {
+      successTitle: 'Opening NVIDIA Smart Link',
+      successMessage: driver
+        ? 'Opened NVIDIA\'s driver page for your detected GPU.'
+        : 'Opened NVIDIA\'s driver download page.',
+      failureMessage: 'Could not open the NVIDIA driver page'
+    });
+    return true;
+  }
+
   if (!driver) {
     showToast('Scan Required', 'Scan drivers first so the app can detect your NVIDIA GPU.', 'warning', 4000);
     return false;
@@ -418,7 +505,6 @@ async function startNvidiaDriverDownload(driver, btn = null, fallbackUrl = '') {
     }
   );
 
-  const fallbackDriverUrl = fallbackUrl || getManufacturerUrl(driver.Manufacturer, driver.DeviceName);
   await openExternalLink(fallbackDriverUrl, {
     successTitle: 'Opening Fallback',
     successMessage: 'Opened NVIDIA\'s manual download page instead.',
@@ -583,6 +669,10 @@ const settingsBtn = document.getElementById('settingsBtn');
 const closeSettingsBtn = document.getElementById('closeSettings');
 const autoScanToggle = document.getElementById('autoScanToggle');
 const closeToTrayToggle = document.getElementById('closeToTrayToggle');
+const nvidiaDownloadModeSelect = document.getElementById('nvidiaDownloadModeSelect');
+const autoDownloadNvidiaToggle = document.getElementById('autoDownloadNvidiaToggle');
+const autoDownloadNvidiaItem = document.getElementById('autoDownloadNvidiaItem');
+const autoDownloadNvidiaDescription = document.getElementById('autoDownloadNvidiaDescription');
 const darkModeToggle = document.getElementById('darkModeToggle');
 const autoUpdateCheckToggle = document.getElementById('autoUpdateCheckToggle');
 
@@ -590,6 +680,8 @@ function getSettings() {
   const defaults = {
     autoScan: true,
     closeToTray: false,
+    nvidiaDownloadMode: 'direct',
+    autoDownloadNvidia: false,
     darkMode: true,
     autoUpdateCheck: true
   };
@@ -605,6 +697,48 @@ function saveSettings(settings) {
   localStorage.setItem('driverUpdateSettings', JSON.stringify(settings));
 }
 
+function syncNvidiaDownloadSettingsUI() {
+  const settings = getSettings();
+  const isDirectMode = settings.nvidiaDownloadMode === 'direct';
+
+  if (nvidiaDownloadModeSelect) {
+    nvidiaDownloadModeSelect.value = settings.nvidiaDownloadMode;
+  }
+
+  if (autoDownloadNvidiaToggle) {
+    autoDownloadNvidiaToggle.checked = settings.autoDownloadNvidia;
+    autoDownloadNvidiaToggle.disabled = !isDirectMode;
+  }
+
+  if (autoDownloadNvidiaItem) {
+    autoDownloadNvidiaItem.classList.toggle('is-disabled', !isDirectMode);
+  }
+
+  if (autoDownloadNvidiaDescription) {
+    autoDownloadNvidiaDescription.textContent = isDirectMode
+      ? 'Automatically start the latest NVIDIA package download after the startup scan'
+      : 'Auto-download is only available when Direct package download is selected';
+  }
+}
+
+async function maybeAutoDownloadNvidiaOnStartup() {
+  const settings = getSettings();
+
+  if (startupAutoDownloadHandled || !settings.autoDownloadNvidia || settings.nvidiaDownloadMode !== 'direct') {
+    return;
+  }
+
+  startupAutoDownloadHandled = true;
+
+  const nvidiaDriver = getPrimaryNvidiaDriver();
+  if (!nvidiaDriver || nvidiaDriver.status !== 'update') {
+    return;
+  }
+
+  showToast('Auto-Download Started', 'Downloading the latest NVIDIA package for your detected GPU.', 'info', 3500);
+  await startNvidiaDriverDownload(nvidiaDriver);
+}
+
 function initSettings() {
   const settings = getSettings();
   
@@ -614,6 +748,12 @@ function initSettings() {
   }
   if (closeToTrayToggle) {
     closeToTrayToggle.checked = settings.closeToTray;
+  }
+  if (nvidiaDownloadModeSelect) {
+    nvidiaDownloadModeSelect.value = settings.nvidiaDownloadMode;
+  }
+  if (autoDownloadNvidiaToggle) {
+    autoDownloadNvidiaToggle.checked = settings.autoDownloadNvidia;
   }
   if (darkModeToggle) {
     darkModeToggle.checked = settings.darkMode;
@@ -625,6 +765,7 @@ function initSettings() {
   // Apply dark mode from settings
   document.documentElement.setAttribute('data-theme', settings.darkMode ? 'dark' : 'light');
   window.electronAPI.setCloseToTrayEnabled(settings.closeToTray);
+  syncNvidiaDownloadSettingsUI();
 }
 
 function openSettings() {
@@ -666,6 +807,42 @@ if (closeToTrayToggle) {
   });
 }
 
+if (nvidiaDownloadModeSelect) {
+  nvidiaDownloadModeSelect.addEventListener('change', () => {
+    const settings = getSettings();
+    settings.nvidiaDownloadMode = nvidiaDownloadModeSelect.value;
+    saveSettings(settings);
+    syncNvidiaDownloadSettingsUI();
+
+    showToast(
+      settings.nvidiaDownloadMode === 'direct' ? 'Direct Package Mode' : 'Smart Link Mode',
+      settings.nvidiaDownloadMode === 'direct'
+        ? 'NVIDIA clicks will download the package directly from the app.'
+        : 'NVIDIA clicks will open NVIDIA\'s driver page instead of downloading from the app.',
+      'info',
+      3000
+    );
+  });
+}
+
+if (autoDownloadNvidiaToggle) {
+  autoDownloadNvidiaToggle.addEventListener('change', () => {
+    const settings = getSettings();
+    settings.autoDownloadNvidia = autoDownloadNvidiaToggle.checked;
+    saveSettings(settings);
+    syncNvidiaDownloadSettingsUI();
+
+    showToast(
+      settings.autoDownloadNvidia ? 'Auto-Download Enabled' : 'Auto-Download Disabled',
+      settings.autoDownloadNvidia
+        ? 'The app will download the latest NVIDIA package after the startup scan.'
+        : 'The app will wait for you to start NVIDIA downloads manually.',
+      'info',
+      3000
+    );
+  });
+}
+
 darkModeToggle.addEventListener('change', () => {
   const settings = getSettings();
   settings.darkMode = darkModeToggle.checked;
@@ -692,6 +869,26 @@ const appVersionEls = document.querySelectorAll('[data-app-version]');
 let updateAvailableVersion = null;
 let updateDownloaded = false;
 
+async function startAutomaticAppUpdateDownload(version) {
+  if (updateDownloadStarted) {
+    return;
+  }
+
+  updateDownloadStarted = true;
+  updateAction.textContent = 'Starting download...';
+  updateAction.disabled = true;
+  updateMessage.textContent = `Version ${version} is being downloaded automatically`;
+  showToast('App Update Available', `Version ${version} was found and is downloading automatically.`, 'info', 3500);
+
+  const result = await window.electronAPI.downloadUpdate();
+  if (!result?.success) {
+    updateDownloadStarted = false;
+    updateAction.textContent = 'Download';
+    updateAction.disabled = false;
+    showToast('Update Download Failed', result?.error || 'Could not start downloading the app update.', 'error', 4000);
+  }
+}
+
 // Update banner functions
 function showUpdateBanner() {
   updateBanner.classList.remove('hidden');
@@ -710,12 +907,15 @@ function setUpdateProgress(percent) {
 window.electronAPI.onUpdateStatus((data) => {
   switch (data.status) {
     case 'checking':
+      updateDownloadStarted = false;
       if (lastUpdateCheck) {
         lastUpdateCheck.textContent = 'Checking for updates...';
       }
       break;
       
     case 'available':
+      updateDownloaded = false;
+      updateDownloadStarted = false;
       updateAvailableVersion = data.version;
       updateTitle.textContent = 'Update Available!';
       updateMessage.textContent = `Version ${data.version} is ready to download`;
@@ -726,21 +926,29 @@ window.electronAPI.onUpdateStatus((data) => {
       if (lastUpdateCheck) {
         lastUpdateCheck.textContent = `Version ${data.version} available`;
       }
+      if (getSettings().autoUpdateCheck) {
+        void startAutomaticAppUpdateDownload(data.version);
+      } else {
+        showToast('App Update Available', `Version ${data.version} is ready to download.`, 'info', 3500);
+      }
       break;
       
     case 'not-available':
+      updateDownloadStarted = false;
       if (lastUpdateCheck) {
         lastUpdateCheck.textContent = 'You have the latest version';
       }
       break;
     
     case 'dev-mode':
+      updateDownloadStarted = false;
       if (lastUpdateCheck) {
         lastUpdateCheck.textContent = 'Update check skipped (development mode)';
       }
       break;
       
     case 'downloading':
+      updateDownloadStarted = true;
       updateTitle.textContent = 'Downloading Update...';
       updateMessage.textContent = `Version ${updateAvailableVersion}`;
       updateAction.textContent = 'Downloading...';
@@ -751,6 +959,7 @@ window.electronAPI.onUpdateStatus((data) => {
       
     case 'downloaded':
       updateDownloaded = true;
+      updateDownloadStarted = false;
       updateTitle.textContent = 'Update Ready!';
       updateMessage.textContent = `Version ${data.version} is ready to install`;
       updateAction.textContent = 'Install & Restart';
@@ -759,14 +968,17 @@ window.electronAPI.onUpdateStatus((data) => {
       if (lastUpdateCheck) {
         lastUpdateCheck.textContent = `Version ${data.version} ready to install`;
       }
+      showToast('App Update Ready', `Version ${data.version} is downloaded and ready to install.`, 'success', 4000);
       break;
       
     case 'error':
+      updateDownloadStarted = false;
       hideUpdateBanner();
       if (lastUpdateCheck) {
         lastUpdateCheck.textContent = 'Error checking for updates';
       }
       console.error('Update error:', data.message);
+      showToast('App Update Error', data.message || 'There was a problem checking for updates.', 'error', 4000);
       break;
   }
 });
@@ -902,6 +1114,7 @@ updateAction.addEventListener('click', async () => {
     await window.electronAPI.installUpdate();
   } else {
     // Download the update
+    updateDownloadStarted = true;
     updateAction.disabled = true;
     updateAction.textContent = 'Starting download...';
     await window.electronAPI.downloadUpdate();
@@ -928,6 +1141,39 @@ if (downloadIndicator) {
     }
   });
 }
+
+if (notificationBtn) {
+  notificationBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    setNotificationPanelOpen(!isNotificationPanelOpen);
+  });
+}
+
+if (clearNotificationsBtn) {
+  clearNotificationsBtn.addEventListener('click', () => {
+    notifications.length = 0;
+    unreadNotificationCount = 0;
+    renderNotifications();
+  });
+}
+
+if (closeNotificationsBtn) {
+  closeNotificationsBtn.addEventListener('click', () => {
+    setNotificationPanelOpen(false);
+  });
+}
+
+document.addEventListener('click', (event) => {
+  if (!isNotificationPanelOpen || !notificationPanel || !notificationBtn) {
+    return;
+  }
+
+  if (notificationPanel.contains(event.target) || notificationBtn.contains(event.target)) {
+    return;
+  }
+
+  setNotificationPanelOpen(false);
+});
 
 if (toolDownloadAction) {
   toolDownloadAction.addEventListener('click', async () => {
@@ -1195,16 +1441,17 @@ async function init() {
   
   // Auto-scan on startup if enabled
   const settings = getSettings();
-  if (settings.autoScan) {
+  const shouldScanOnStartup = settings.autoScan || (settings.autoDownloadNvidia && settings.nvidiaDownloadMode === 'direct');
+  if (shouldScanOnStartup) {
     // Small delay to let UI render first
     setTimeout(() => {
-      scanDrivers();
+      scanDrivers({ startup: true });
     }, 500);
   }
 }
 
 // Scan drivers
-async function scanDrivers() {
+async function scanDrivers(options = {}) {
   switchView('drivers');
   scanBtn.disabled = true;
   scanBtn.innerHTML = `
@@ -1273,6 +1520,9 @@ async function scanDrivers() {
     
     updateStats();
     renderDrivers();
+    if (options.startup) {
+      await maybeAutoDownloadNvidiaOnStartup();
+    }
     
     // Calculate stats for toast
     const updatesCount = allDrivers.filter(d => d.status === 'update').length;
@@ -1611,6 +1861,9 @@ document.addEventListener('keydown', (e) => {
     if (settingsModal.classList.contains('active')) {
       closeSettings();
     }
+    if (isNotificationPanelOpen) {
+      setNotificationPanelOpen(false);
+    }
     if (!updateBanner.classList.contains('hidden')) {
       hideUpdateBanner();
     }
@@ -1724,7 +1977,8 @@ init();
 // Try to load cached results if not auto-scanning
 setTimeout(() => {
   const settings = getSettings();
-  if (!settings.autoScan) {
+  const shouldScanOnStartup = settings.autoScan || (settings.autoDownloadNvidia && settings.nvidiaDownloadMode === 'direct');
+  if (!shouldScanOnStartup) {
     loadCachedResults();
   }
 }, 100);
