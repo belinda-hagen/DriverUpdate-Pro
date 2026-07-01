@@ -2,6 +2,12 @@
 
 All notable changes to DriverUpdate Pro will be documented in this file.
 
+## [1.2.1] - 2026-07-01
+
+### 🐛 Bug Fixes
+
+- **NVIDIA Auto-Download Restart**: Fixed an issue where cancelling (or stopping) the startup NVIDIA package download and then restarting the app would begin the download all over again. The app now remembers which driver version the auto-download has already handled and will not restart it for that same version; a newer driver version re-arms it.
+
 ## [1.2.0] - 2026-05-04
 
 ### ✨ New Features
