@@ -60,6 +60,8 @@ let activeDownloadId = '';
 let downloadPaused = false;
 let toolDownloadBannerDismissed = false;
 let startupAutoDownloadHandled = false;
+let autoDownloadInProgress = false;
+let autoDownloadToken = '';
 let updateDownloadStarted = false;
 let unreadNotificationCount = 0;
 let isNotificationPanelOpen = false;
@@ -697,6 +699,33 @@ function saveSettings(settings) {
   localStorage.setItem('driverUpdateSettings', JSON.stringify(settings));
 }
 
+const NVIDIA_AUTO_DOWNLOAD_HANDLED_KEY = 'nvidiaAutoDownloadHandledVersion';
+
+// Identifies the NVIDIA update a startup auto-download would target. Keyed on
+// the resolved latest version so that a brand-new driver re-arms auto-download.
+function getNvidiaAutoDownloadToken(driver) {
+  return driver && driver.latestVersion ? String(driver.latestVersion) : '__latest__';
+}
+
+// Remember that the startup auto-download for a given version was already
+// handled (it finished, or the user stopped/cancelled it), so we don't restart
+// the same download the next time the app launches.
+function getHandledNvidiaAutoDownloadToken() {
+  try {
+    return localStorage.getItem(NVIDIA_AUTO_DOWNLOAD_HANDLED_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function setHandledNvidiaAutoDownloadToken(token) {
+  try {
+    localStorage.setItem(NVIDIA_AUTO_DOWNLOAD_HANDLED_KEY, token || '__latest__');
+  } catch {
+    /* ignore storage errors */
+  }
+}
+
 function syncNvidiaDownloadSettingsUI() {
   const settings = getSettings();
   const isDirectMode = settings.nvidiaDownloadMode === 'direct';
@@ -735,8 +764,26 @@ async function maybeAutoDownloadNvidiaOnStartup() {
     return;
   }
 
+  const token = getNvidiaAutoDownloadToken(nvidiaDriver);
+
+  // Don't automatically restart a download the user already stopped/cancelled
+  // (or that already finished) for this same driver version. A newer version
+  // produces a different token and re-arms the auto-download.
+  if (getHandledNvidiaAutoDownloadToken() === token) {
+    return;
+  }
+
+  autoDownloadInProgress = true;
+  autoDownloadToken = token;
+
   showToast('Auto-Download Started', 'Downloading the latest NVIDIA package for your detected GPU.', 'info', 3500);
-  await startNvidiaDriverDownload(nvidiaDriver);
+
+  const started = await startNvidiaDriverDownload(nvidiaDriver);
+  if (!started) {
+    // Failed to resolve/start (not a user cancellation) — leave it un-handled
+    // so a future launch can retry.
+    autoDownloadInProgress = false;
+  }
 }
 
 function initSettings() {
@@ -1073,6 +1120,10 @@ window.electronAPI.onFileDownloadStatus((data) => {
     }
 
     case 'completed':
+      if (autoDownloadInProgress) {
+        setHandledNvidiaAutoDownloadToken(autoDownloadToken);
+        autoDownloadInProgress = false;
+      }
       lastDownloadedToolPath = data.savePath || '';
       resetActiveToolDownloadButton();
       updateDownloadIndicator('Download ready', 'ready');
@@ -1091,6 +1142,14 @@ window.electronAPI.onFileDownloadStatus((data) => {
     case 'interrupted':
     case 'cancelled':
     case 'error':
+      if (autoDownloadInProgress) {
+        // A user stop/cancel means don't auto-restart this version next launch.
+        // A transient interruption/error stays un-handled so it can retry later.
+        if (data.status === 'cancelled') {
+          setHandledNvidiaAutoDownloadToken(autoDownloadToken);
+        }
+        autoDownloadInProgress = false;
+      }
       resetActiveToolDownloadButton();
       updateDownloadIndicator(data.status === 'cancelled' ? '' : 'Download failed', data.status === 'cancelled' ? 'active' : 'paused');
       showToolDownloadBanner(
